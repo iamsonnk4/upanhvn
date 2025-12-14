@@ -168,7 +168,15 @@
             <p id="mobile-mini-artist" class="text-xs text-gray-400 truncate">...</p>
         </div>
         <div class="flex items-center gap-3 pr-2">
-            <button class="text-white" onclick="togglePlay()"><i id="mobile-play-icon" data-lucide="play" class="fill-white w-6 h-6"></i></button>
+            <!-- SỬA: Dùng 2 thẻ span chứa sẵn icon Play và Pause để toggle class, tránh lỗi render lại -->
+            <button id="mobile-play-btn" class="text-white p-2 focus:outline-none" onclick="togglePlay()">
+                <span id="mobile-icon-play" class="block">
+                    <i data-lucide="play" class="fill-white w-6 h-6"></i>
+                </span>
+                <span id="mobile-icon-pause" class="hidden">
+                    <i data-lucide="pause" class="fill-white w-6 h-6"></i>
+                </span>
+            </button>
         </div>
         <!-- Thanh tiến trình nhỏ xíu -->
         <div class="absolute bottom-0 left-1 right-1 h-[2px] bg-gray-600 rounded-full overflow-hidden">
@@ -369,21 +377,29 @@
 
         function updatePlayIcons(state) {
             const iconName = state === 'pause' ? 'pause' : 'play';
-            const html = `<i data-lucide="${iconName}" class="w-full h-full fill-current"></i>`;
             
-            // Hero Button
+            // 1. Desktop & Hero Button (Legacy innerHTML approach)
             const heroBtn = document.getElementById('hero-play-btn');
-            heroBtn.innerHTML = `<i data-lucide="${iconName}" class="fill-black ml-${state==='play'?1:0} w-6 h-6"></i>`;
+            if (heroBtn) heroBtn.innerHTML = `<i data-lucide="${iconName}" class="fill-black ml-${state==='play'?1:0} w-6 h-6"></i>`;
 
-            // Desktop Button
             const desktopBtn = document.getElementById('play-pause-desktop');
-            desktopBtn.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4 text-black fill-black ml-${state==='play'?0.5:0}"></i>`;
+            if (desktopBtn) desktopBtn.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4 text-black fill-black ml-${state==='play'?0.5:0}"></i>`;
 
-            // Mobile Icon
-            const mobileIcon = document.getElementById('mobile-play-icon');
-            mobileIcon.setAttribute('data-lucide', iconName); // Simple attribute switch might not work with lucide reload
-            mobileIcon.parentElement.innerHTML = `<i data-lucide="${iconName}" class="fill-white w-6 h-6"></i>`;
+            // 2. Mobile Button (Toggle Visibility approach - Tối ưu)
+            const mPlay = document.getElementById('mobile-icon-play');
+            const mPause = document.getElementById('mobile-icon-pause');
+            
+            if (mPlay && mPause) {
+                if (state === 'play') { // Cần hiện nút Play (vì nhạc đang dừng)
+                    mPlay.classList.remove('hidden');
+                    mPause.classList.add('hidden');
+                } else { // Cần hiện nút Pause (vì nhạc đang phát)
+                    mPlay.classList.add('hidden');
+                    mPause.classList.remove('hidden');
+                }
+            }
 
+            // Re-run lucide for Desktop elements
             if(window.lucide) lucide.createIcons();
         }
 
