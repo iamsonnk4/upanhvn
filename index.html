@@ -3,47 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DoThy - 70% Cơ Thể Là Nhạc</title>
+    <title>Zingify - Web Nghe Nhạc</title>
     
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Tailwind CSS (Giữ nguyên CDN) -->
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <!-- Lucide Icons -->
+    <script src="[https://unpkg.com/lucide@latest](https://unpkg.com/lucide@latest)"></script>
     
-    <style>
-        input[type=range] {
-            -webkit-appearance: none;
-            background: transparent;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 12px;
-            width: 12px;
-            border-radius: 50%;
-            background: #ffffff;
-            cursor: pointer;
-            margin-top: -4px;
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
-            cursor: pointer;
-            background: #52525b;
-            border-radius: 2px;
-        }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: #10b981;
-        }
-        .toggle-checkbox:checked + .toggle-label {
-            background-color: #10b981;
-        }
-    </style>
+    <!-- LIÊN KẾT FILE CSS RIÊNG -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-black text-white font-sans h-screen flex flex-col overflow-hidden">
 
-    <audio id="audio-player"></audio>
+    <!-- Thêm playsinline để hỗ trợ tốt hơn trên mobile -->
+    <audio id="audio-player" playsinline></audio>
 
     <div class="flex flex-1 overflow-hidden">
         
@@ -136,14 +109,13 @@
                 <div class="bg-blue-900/30 border border-blue-600/50 p-4 rounded-lg flex items-start gap-3">
                     <i data-lucide="info" class="text-blue-500 flex-shrink-0 mt-1"></i>
                     <div class="text-sm text-blue-200">
-                        <strong>Lưu ý khi dùng GitHub:</strong><br>
-                        Để bài hát hiện cho tất cả mọi người, hãy sửa trực tiếp biến <code>defaultSongs</code> trong file code <code>index.html</code> trước khi upload.
+                        <strong>Lưu ý GitHub:</strong> Sửa file <code>script.js</code> (biến defaultSongs) để thêm nhạc mặc định.
                     </div>
                 </div>
 
                 <!-- Form Thêm -->
                 <div class="bg-zinc-800/50 p-6 rounded-lg border border-zinc-700">
-                    <h3 class="text-lg font-semibold mb-4 text-emerald-400">Thêm Bài Hát (Chỉ máy này nghe được)</h3>
+                    <h3 class="text-lg font-semibold mb-4 text-emerald-400">Thêm Bài Hát (Local)</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input type="text" id="input-title" class="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:outline-none focus:border-emerald-500" placeholder="Tên bài hát...">
                         <input type="text" id="input-artist" class="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:outline-none focus:border-emerald-500" placeholder="Ca sĩ...">
@@ -153,18 +125,14 @@
                     <button onclick="addNewSong()" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded transition flex items-center justify-center gap-2">
                         <i data-lucide="plus"></i> Thêm Bài Hát
                     </button>
-                    <!-- Nút reset -->
                     <button onclick="resetDefaultSongs()" class="w-full mt-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 font-bold py-2 px-4 rounded transition text-xs border border-zinc-600">
-                        Khôi phục danh sách gốc (Của GitHub)
+                        Khôi phục danh sách gốc
                     </button>
                 </div>
 
                 <!-- Danh sách Admin -->
                 <div>
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold text-white">Danh Sách Hiện Tại</h3>
-                    </div>
-                    
+                    <h3 class="text-lg font-semibold text-white mb-4">Danh Sách Hiện Tại</h3>
                     <div class="bg-zinc-800 rounded-lg overflow-hidden border border-zinc-700">
                         <table class="w-full text-left text-sm text-zinc-400">
                             <thead class="bg-zinc-900 text-xs uppercase font-medium text-zinc-500">
@@ -175,9 +143,7 @@
                                     <th class="px-4 py-3 w-16 text-center">Xóa</th>
                                 </tr>
                             </thead>
-                            <tbody id="admin-song-list" class="divide-y divide-zinc-700">
-                                <!-- Render by JS -->
-                            </tbody>
+                            <tbody id="admin-song-list" class="divide-y divide-zinc-700"></tbody>
                         </table>
                     </div>
                 </div>
@@ -222,398 +188,7 @@
         </div>
     </div>
 
-    <script>
-        // --- 1. DỮ LIỆU & LƯU TRỮ ---
-        
-        // --- KHU VỰC NHẬP BÀI HÁT ĐỂ ĐƯA LÊN GITHUB ---
-        // Bạn hãy copy link nhạc và link ảnh vào đây thì AI CŨNG SẼ THẤY
-        const defaultSongs = [
-            {
-                id: 1,
-                title: "Christmas",
-                artist: "DoThy",
-                cover: "https://i.imgur.com/tWzvF8A.jpeg",
-                url: "https://github.com/iamsonnk4/upanhvn/releases/download/1/Louisvuiton.Christmas.mp3",
-                duration: "175:13",
-                isHidden: false
-            },
-            {
-                id: 2,
-                title: "Nhạc Demo 2",
-                artist: "SoundHelix",
-                cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop",
-                url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-                duration: "7:05",
-                isHidden: false
-            }
-            // Muốn thêm bài nữa thì copy đoạn {...}, ở trên và dán xuống đây
-        ];
-
-        // Key lưu trữ mới để reset lại dữ liệu của bạn về mặc định này
-        const STORAGE_KEY = 'zingify_songs_github_v1'; 
-        let allSongs = [];
-
-        function loadData() {
-            try {
-                const data = localStorage.getItem(STORAGE_KEY);
-                if (data) {
-                    allSongs = JSON.parse(data);
-                } else {
-                    // Nếu chưa có dữ liệu cá nhân (hoặc lần đầu vào link Github)
-                    // thì dùng danh sách defaultSongs ở trên
-                    allSongs = [...defaultSongs];
-                }
-            } catch (error) {
-                console.error("Lỗi đọc dữ liệu:", error);
-                allSongs = [...defaultSongs];
-            }
-        }
-
-        function saveData() {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(allSongs));
-            } catch (error) {
-                console.error("Lỗi lưu dữ liệu:", error);
-            }
-        }
-        
-        // --- 2. BIẾN TOÀN CỤC ---
-        let playlist = []; 
-        let currentIndex = 0;
-        let isPlaying = false;
-
-        // DOM Elements
-        const audio = document.getElementById('audio-player');
-        const playPauseBtn = document.getElementById('play-pause-btn');
-        const heroPlayBtn = document.getElementById('hero-play-btn');
-        const progressBar = document.getElementById('progress-bar');
-        const currentTimeEl = document.getElementById('current-time');
-        const totalDurationEl = document.getElementById('total-duration');
-
-        // --- 3. LOGIC KHỞI TẠO (INIT) ---
-
-        function init() {
-            loadData();
-            
-            if (!Array.isArray(allSongs)) allSongs = [];
-            allSongs = allSongs.map(s => ({...s, isHidden: s.isHidden || false}));
-            
-            updatePlaylist();
-            
-            if (playlist.length > 0) {
-                loadSong(0);
-            } else {
-                showEmptyState();
-            }
-            
-            if(window.lucide) lucide.createIcons();
-        }
-
-        function updatePlaylist() {
-            playlist = allSongs.filter(song => !song.isHidden);
-            if (currentIndex >= playlist.length) currentIndex = 0;
-            renderSongList();
-        }
-
-        // --- 4. CÁC HÀM QUẢN LÝ (ADMIN) ---
-
-        function openAdminModal() {
-            document.getElementById('admin-modal').classList.remove('hidden');
-            renderAdminSongList();
-        }
-
-        function closeAdminModal() {
-            document.getElementById('admin-modal').classList.add('hidden');
-        }
-
-        function renderAdminSongList() {
-            const list = document.getElementById('admin-song-list');
-            list.innerHTML = '';
-            
-            if(allSongs.length === 0) {
-                list.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-zinc-500">Chưa có bài hát nào</td></tr>';
-                return;
-            }
-            
-            allSongs.forEach((song, index) => {
-                const html = `
-                    <tr class="hover:bg-zinc-800/50 transition group">
-                        <td class="px-4 py-3">${index + 1}</td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center gap-3">
-                                <img src="${song.cover}" class="w-8 h-8 rounded object-cover">
-                                <div class="min-w-0">
-                                    <div class="font-medium text-white truncate max-w-[150px]">${song.title}</div>
-                                    <div class="text-xs text-zinc-500">${song.duration}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-4 py-3 text-center">
-                            <input type="checkbox" 
-                                class="w-5 h-5 accent-emerald-500 cursor-pointer rounded" 
-                                ${!song.isHidden ? 'checked' : ''} 
-                                onchange="toggleSongVisibility(${index})"
-                                title="${song.isHidden ? 'Đang ẩn' : 'Đang hiện'}"
-                            >
-                        </td>
-                        <td class="px-4 py-3 text-center">
-                            <button onclick="deleteSong(${index})" class="text-zinc-500 hover:text-red-500 transition p-1">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-                list.insertAdjacentHTML('beforeend', html);
-            });
-            if(window.lucide) lucide.createIcons();
-        }
-
-        window.toggleSongVisibility = function(realIndex) {
-            allSongs[realIndex].isHidden = !allSongs[realIndex].isHidden;
-            saveData();
-            updatePlaylist();
-            
-            if (allSongs[realIndex].isHidden && isPlaying) {
-                 if(playlist.length > 0) loadSong(0);
-                 else {
-                     audio.pause();
-                     showEmptyState();
-                 }
-            }
-        };
-
-        window.addNewSong = function() {
-            const title = document.getElementById('input-title').value;
-            const artist = document.getElementById('input-artist').value;
-            const cover = document.getElementById('input-cover').value;
-            const url = document.getElementById('input-url').value;
-
-            if(!title || !url) {
-                alert("Cần nhập tên và link nhạc!");
-                return;
-            }
-
-            allSongs.push({
-                id: Date.now(),
-                title, 
-                artist: artist || "Unknown",
-                cover: cover || "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&h=300&fit=crop",
-                url,
-                duration: "0:00", 
-                isHidden: false
-            });
-            
-            saveData();
-            updatePlaylist();
-            renderAdminSongList();
-            
-            document.getElementById('input-title').value = "";
-            document.getElementById('input-url').value = "";
-            
-            alert("Đã thêm! (Lưu ý: Chỉ bạn mới thấy bài này, để hiện trên Github hãy sửa code)");
-        };
-
-        window.deleteSong = function(realIndex) {
-            if(confirm('Xóa vĩnh viễn bài này?')) {
-                allSongs.splice(realIndex, 1);
-                saveData();
-                updatePlaylist();
-                renderAdminSongList();
-                
-                if(playlist.length > 0) {
-                    loadSong(0);
-                } else {
-                    audio.pause();
-                    showEmptyState();
-                }
-            }
-        };
-
-        // Reset về danh sách mặc định (của Github)
-        window.resetDefaultSongs = function() {
-            if(confirm("Khôi phục danh sách gốc (như trong code)?")) {
-                allSongs = [...defaultSongs];
-                saveData();
-                updatePlaylist();
-                renderAdminSongList();
-                if(playlist.length > 0) loadSong(0);
-                else showEmptyState();
-                alert("Đã khôi phục danh sách gốc!");
-            }
-        };
-
-        // --- 5. PLAYER UI LOGIC ---
-
-        function showEmptyState() {
-            document.getElementById('hero-title').innerText = "Chưa có bài hát";
-            document.getElementById('hero-artist').innerText = "...";
-            document.getElementById('hero-duration').innerText = "";
-            document.getElementById('hero-img').src = "https://via.placeholder.com/300/18181b/FFFFFF/?text=Music"; 
-            document.getElementById('song-list').innerHTML = '<p class="text-zinc-500 p-8 col-span-3 text-center border-2 border-dashed border-zinc-800 rounded-xl">Danh sách trống trơn.</p>';
-            
-            document.getElementById('mini-title').innerText = "...";
-            document.getElementById('mini-artist').innerText = "...";
-            document.getElementById('mini-cover').src = "https://via.placeholder.com/100/18181b/FFFFFF/?text=M";
-        }
-
-        function renderSongList() {
-            const container = document.getElementById('song-list');
-            container.innerHTML = '';
-            
-            if (playlist.length === 0) {
-                showEmptyState();
-                return;
-            }
-
-            playlist.forEach((song, index) => {
-                const isActive = index === currentIndex;
-                const html = `
-                    <div onclick="playSongByIndex(${index})" class="flex items-center gap-4 p-3 rounded-md cursor-pointer transition group ${isActive ? 'bg-zinc-800' : 'hover:bg-zinc-800/50'}">
-                        <div class="relative w-12 h-12 flex-shrink-0">
-                            <img src="${song.cover}" class="w-full h-full object-cover rounded">
-                            ${isActive && isPlaying ? '<div class="absolute inset-0 bg-black/40 flex items-center justify-center"><div class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div></div>' : ''}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h4 class="font-semibold truncate ${isActive ? 'text-emerald-500' : 'text-white'}">${song.title}</h4>
-                            <p class="text-xs text-zinc-400 truncate">${song.artist}</p>
-                        </div>
-                        <span class="text-xs text-zinc-500">${song.duration}</span>
-                    </div>
-                `;
-                container.insertAdjacentHTML('beforeend', html);
-            });
-        }
-
-        window.playSongByIndex = function(index) {
-            currentIndex = index;
-            loadSong(currentIndex);
-            audio.play();
-            isPlaying = true;
-            updatePlayIcons('pause');
-        };
-
-        function loadSong(index) {
-            if (playlist.length === 0) return;
-            const song = playlist[index];
-            
-            if (audio.src !== song.url) {
-                audio.src = song.url;
-            }
-
-            document.getElementById('hero-img').src = song.cover;
-            document.getElementById('mini-cover').src = song.cover;
-            document.getElementById('hero-title').innerText = song.title;
-            document.getElementById('mini-title').innerText = song.title;
-            document.getElementById('hero-artist').innerText = song.artist;
-            document.getElementById('mini-artist').innerText = song.artist;
-            document.getElementById('hero-duration').innerText = song.duration;
-            
-            renderSongList();
-        }
-
-        // --- 6. AUDIO EVENTS ---
-
-        audio.onloadedmetadata = function() {
-            const duration = audio.duration;
-            if (duration && duration !== Infinity) {
-                const formatted = formatTime(duration);
-                totalDurationEl.innerText = formatted;
-                
-                const currentSongData = playlist[currentIndex];
-                if(currentSongData) {
-                    const realSongIndex = allSongs.findIndex(s => s.id === currentSongData.id);
-                    if (realSongIndex !== -1) {
-                        if (allSongs[realSongIndex].duration === "0:00" || allSongs[realSongIndex].duration === "Unknown") {
-                            allSongs[realSongIndex].duration = formatted;
-                            saveData();
-                            renderSongList();
-                            renderAdminSongList(); 
-                        }
-                    }
-                }
-            }
-        };
-
-        audio.ontimeupdate = function() {
-            if (audio.duration) {
-                const pct = (audio.currentTime / audio.duration) * 100;
-                progressBar.value = pct;
-                currentTimeEl.innerText = formatTime(audio.currentTime);
-            }
-        };
-
-        audio.onended = function() {
-            nextSong();
-        };
-
-        // --- CONTROLS ---
-
-        function togglePlay() {
-            if(playlist.length === 0) return;
-            if (isPlaying) {
-                audio.pause();
-                updatePlayIcons('play');
-            } else {
-                audio.play();
-                updatePlayIcons('pause');
-            }
-            isPlaying = !isPlaying;
-            renderSongList();
-        }
-
-        function updatePlayIcons(state) {
-            const icon = state === 'pause' ? 'pause' : 'play';
-            const iconHtml = `<i data-lucide="${icon}" class="w-4 h-4 fill-black ml-${state==='play'?0.5:0}"></i>`;
-            const bigIconHtml = `<i data-lucide="${icon}" class="fill-black ml-${state==='play'?1:0}"></i>`;
-            
-            playPauseBtn.innerHTML = iconHtml;
-            heroPlayBtn.innerHTML = bigIconHtml;
-            
-            if(window.lucide) lucide.createIcons();
-        }
-
-        function nextSong() {
-            if(playlist.length === 0) return;
-            currentIndex = (currentIndex + 1) % playlist.length;
-            loadSong(currentIndex);
-            if(isPlaying) audio.play();
-        }
-
-        function prevSong() {
-            if(playlist.length === 0) return;
-            currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
-            loadSong(currentIndex);
-            if(isPlaying) audio.play();
-        }
-
-        function formatTime(seconds) {
-            if (isNaN(seconds)) return "0:00";
-            const min = Math.floor(seconds / 60);
-            const sec = Math.floor(seconds % 60);
-            return `${min}:${sec < 10 ? '0' + sec : sec}`;
-        }
-
-        // --- BINDING EVENTS ---
-        playPauseBtn.onclick = togglePlay;
-        heroPlayBtn.onclick = togglePlay;
-        document.getElementById('next-btn').onclick = nextSong;
-        document.getElementById('prev-btn').onclick = prevSong;
-        
-        progressBar.oninput = function() {
-            audio.currentTime = (progressBar.value / 100) * audio.duration;
-        };
-        
-        document.getElementById('volume-bar').oninput = function(e) {
-            audio.volume = e.target.value;
-        };
-
-        const sidebar = document.getElementById('sidebar');
-        document.getElementById('open-sidebar').onclick = () => sidebar.classList.remove('-translate-x-full');
-        document.getElementById('close-sidebar').onclick = () => sidebar.classList.add('-translate-x-full');
-
-        // Chạy init khi trang web đã tải xong (An toàn nhất)
-        window.onload = init;
-
-    </script>
+    <!-- LIÊN KẾT FILE JS RIÊNG -->
+    <script src="script.js"></script>
 </body>
 </html>
