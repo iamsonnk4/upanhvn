@@ -43,7 +43,17 @@
 </head>
 <body class="bg-black text-white font-sans h-screen flex flex-col overflow-hidden select-none">
 
-    <!-- Sửa lỗi iOS: Thêm preload, playsinline -->
+    <!-- OVERLAY KÍCH HOẠT IOS (BẮT BUỘC) -->
+    <div id="ios-unlock-overlay" class="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center p-6 text-center transition-opacity duration-500" style="display: flex;">
+        <i data-lucide="music" class="w-16 h-16 text-emerald-500 mb-4 animate-bounce"></i>
+        <h2 class="text-2xl font-bold mb-2">Chạm để bắt đầu</h2>
+        <p class="text-zinc-400 mb-6">iOS yêu cầu bạn chạm vào màn hình lần đầu để kích hoạt âm thanh.</p>
+        <button id="unlock-btn" class="bg-emerald-500 text-black font-bold py-3 px-8 rounded-full text-lg shadow-lg hover:bg-emerald-400 hover:scale-105 transition">
+            Vào Nghe Nhạc
+        </button>
+    </div>
+
+    <!-- Audio Player -->
     <audio id="audio-player" preload="auto" playsinline webkit-playsinline></audio>
 
     <div class="flex flex-1 overflow-hidden">
@@ -238,7 +248,6 @@
     <script>
         // --- 1. DỮ LIỆU ---
         
-        // Link nhạc ví dụ (Cần đảm bảo link MP3 direct, không qua redirect để chạy mượt trên iOS)
         const defaultSongs = [
             {
                 id: 1,
@@ -258,12 +267,12 @@
             }
         ];
 
-        const STORAGE_KEY = 'zingify_songs_github_v2_ios'; 
+        const STORAGE_KEY = 'zingify_songs_github_v3_ios_strict'; 
         let allSongs = [];
         let playlist = []; 
         let currentIndex = 0;
         let isPlaying = false;
-        let isSeeking = false; // Tránh xung đột khi kéo thanh trượt
+        let isSeeking = false; 
 
         // DOM Elements
         const audio = document.getElementById('audio-player');
@@ -276,6 +285,7 @@
         const volumeBar = document.getElementById('volume-bar');
         const volumeFill = document.getElementById('volume-fill');
         const heroImg = document.getElementById('hero-img');
+        const unlockOverlay = document.getElementById('ios-unlock-overlay');
 
         // --- 2. HỆ THỐNG (INIT) ---
 
@@ -283,12 +293,16 @@
             loadData();
             updatePlaylist();
             
-            // Xử lý Audio Context cho iOS (Hack để mở khóa âm thanh ngay lần chạm đầu)
-            document.addEventListener('touchstart', unlockAudio, { once: true });
-            document.addEventListener('click', unlockAudio, { once: true });
+            // Hiện overlay bắt buộc user click để unlock Audio Context
+            document.getElementById('unlock-btn').addEventListener('click', () => {
+                unlockAudio();
+                unlockOverlay.style.opacity = '0';
+                setTimeout(() => {
+                    unlockOverlay.style.display = 'none';
+                }, 500);
+            });
 
             if (playlist.length > 0) {
-                // Chỉ load thông tin bài hát lên UI, KHÔNG gọi audio.load() ngay lập tức để tránh lỗi
                 renderCurrentSongInfo(0);
             } else {
                 showEmptyState();
@@ -297,10 +311,19 @@
             if(window.lucide) lucide.createIcons();
         }
 
+        // HÀM QUAN TRỌNG: Mở khóa âm thanh
         function unlockAudio() {
-            // Tạo một buffer rỗng và phát nó để trình duyệt cho phép phát nhạc sau này
-            // Đây là kỹ thuật chuẩn cho Web Audio API trên iOS
-            audio.load();
+            // Phát một âm thanh rỗng ngay lập tức khi user click
+            if (audio) {
+                audio.play().then(() => {
+                    // Ngay sau khi play thành công âm thanh rỗng, pause lại ngay
+                    audio.pause();
+                    audio.currentTime = 0;
+                    console.log("Audio Unlocked successfully!");
+                }).catch((e) => {
+                    console.log("Unlock failed (will try again on next click):", e);
+                });
+            }
         }
 
         function loadData() {
@@ -323,9 +346,8 @@
             renderSongList();
         }
 
-        // --- 3. CORE AUDIO LOGIC (QUAN TRỌNG CHO IOS) ---
+        // --- 3. LOGIC PHÁT NHẠC (ĐÃ SỬA CHO IOS) ---
 
-        // Hàm này chỉ cập nhật giao diện, KHÔNG đụng vào thẻ Audio
         function renderCurrentSongInfo(index) {
             if(playlist.length === 0) return;
             const song = playlist[index];
@@ -337,65 +359,68 @@
             document.getElementById('hero-artist').innerText = song.artist;
             document.getElementById('mini-artist').innerText = song.artist;
             
-            // Reset thanh thời gian tạm thời
-            progressBar.value = 0;
-            progressFill.style.width = '0%';
-            currentTimeEl.innerText = "0:00";
-            totalDurationEl.innerText = "Loading...";
-            
-            // Highlight list
             renderSongList();
         }
 
-        // Hàm này thực sự tải nhạc và phát
-        async function loadAndPlaySong(index) {
+        // SỬA: Không dùng async/await để gọi play(), gọi trực tiếp
+        function loadAndPlaySong(index) {
             if (playlist.length === 0) return;
             
             currentIndex = index;
             const song = playlist[index];
-            
             renderCurrentSongInfo(index);
 
-            // QUAN TRỌNG: Gán src và gọi load()
+            // Gán source
             audio.src = song.url;
-            audio.load(); // Bắt buộc trên iOS sau khi đổi src
+            audio.load(); // Reset buffer
+            
+            // Gọi play ngay lập tức (Synchronous call stack)
+            const playPromise = audio.play();
 
-            try {
-                // Thử phát nhạc
-                await audio.play();
-                isPlaying = true;
-                updatePlayIcons('pause');
-                heroImg.classList.add('spinning');
-            } catch (error) {
-                console.error("Lỗi phát nhạc (Thường do Autoplay Policy):", error);
-                isPlaying = false;
-                updatePlayIcons('play');
-                heroImg.classList.remove('spinning');
-                // Nếu lỗi, có thể do chưa tương tác người dùng, chờ lần bấm sau
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    // Play thành công
+                    isPlaying = true;
+                    updatePlayIcons('pause');
+                    heroImg.classList.add('spinning');
+                })
+                .catch(error => {
+                    console.error("Lỗi Play:", error);
+                    isPlaying = false;
+                    updatePlayIcons('play');
+                    heroImg.classList.remove('spinning');
+                    
+                    // Nếu lỗi do iOS chặn, thử hiển thị thông báo nhỏ
+                    if(error.name === 'NotAllowedError') {
+                        // Thường sẽ không vào đây nếu đã click nút Unlock ở đầu
+                        // Nhưng nếu vào, nghĩa là mất quyền focus
+                        alert("Vui lòng chạm vào nút Play lần nữa để phát nhạc.");
+                    }
+                });
             }
         }
 
         function togglePlay() {
             if(playlist.length === 0) return;
 
-            // Nếu chưa có src (lần đầu vào web), load bài đầu tiên
+            // Nếu chưa có src, load bài hiện tại
             if (!audio.src || audio.src === window.location.href) {
                 loadAndPlaySong(currentIndex);
                 return;
             }
 
             if (audio.paused) {
-                const playPromise = audio.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
+                const p = audio.play();
+                if(p !== undefined) {
+                    p.then(() => {
                         isPlaying = true;
                         updatePlayIcons('pause');
                         heroImg.classList.add('spinning');
-                    }).catch(error => {
-                        console.error("Play prevented:", error);
-                        // Cố gắng load lại và phát nếu bị lỗi
-                        audio.load(); 
-                        // Không gọi play ngay để tránh loop
+                    }).catch(e => {
+                        console.error("Resume failed:", e);
+                        // Nếu resume fail, thử load lại
+                        audio.load();
+                        audio.play().catch(e2 => console.error("Retry failed", e2));
                     });
                 }
             } else {
@@ -408,11 +433,8 @@
 
         function updatePlayIcons(state) {
             const icon = state === 'pause' ? 'pause' : 'play';
-            // Icon nhỏ ở thanh dưới
             playPauseBtn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 fill-black ml-${state==='play'?0.5:0}"></i>`;
-            // Icon to ở banner
             heroPlayBtn.innerHTML = `<i data-lucide="${icon}" class="fill-black ml-${state==='play'?1:0}"></i>`;
-            
             if(window.lucide) lucide.createIcons();
         }
 
@@ -420,16 +442,17 @@
 
         audio.addEventListener('loadedmetadata', () => {
              const duration = audio.duration;
-             if(duration && !isNaN(duration)) {
+             if(duration && !isNaN(duration) && duration !== Infinity) {
                  totalDurationEl.innerText = formatTime(duration);
+             } else {
+                 totalDurationEl.innerText = "LIVE"; // Fallback nếu không lấy được duration
              }
         });
 
-        // Event này chạy liên tục khi nhạc đang phát
         audio.addEventListener('timeupdate', () => {
-            if (isSeeking) return; // Nếu đang kéo tua thì không cập nhật tự động
+            if (isSeeking) return;
             
-            if (audio.duration) {
+            if (audio.duration && audio.duration !== Infinity) {
                 const pct = (audio.currentTime / audio.duration) * 100;
                 progressBar.value = pct;
                 progressFill.style.width = pct + '%';
@@ -441,11 +464,8 @@
             nextSong();
         });
 
-        // Xử lý lỗi khi link nhạc chết
         audio.addEventListener('error', (e) => {
             console.log("Audio Error:", e);
-            // Tự động next bài nếu lỗi
-            if(isPlaying) setTimeout(nextSong, 1000);
         });
 
         // --- 5. ĐIỀU KHIỂN ---
@@ -462,7 +482,7 @@
             loadAndPlaySong(prevIndex);
         }
 
-        // Click bài hát trong list
+        // Hàm này được gọi từ onclick trong HTML -> được coi là User Interaction hợp lệ
         window.playSongByIndex = function(index) {
             loadAndPlaySong(index);
         };
@@ -481,7 +501,6 @@
 
             playlist.forEach((song, index) => {
                 const isActive = index === currentIndex;
-                // Nếu bài đang phát, icon là cột sóng nhạc (nếu có) hoặc pause/play
                 const html = `
                     <div onclick="playSongByIndex(${index})" class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition group ${isActive ? 'bg-white/10' : 'hover:bg-zinc-800/50'}">
                         <div class="relative w-12 h-12 flex-shrink-0">
@@ -508,7 +527,7 @@
         }
 
         function formatTime(seconds) {
-            if (isNaN(seconds)) return "0:00";
+            if (isNaN(seconds) || seconds === Infinity) return "0:00";
             const min = Math.floor(seconds / 60);
             const sec = Math.floor(seconds % 60);
             return `${min}:${sec < 10 ? '0' + sec : sec}`;
@@ -516,12 +535,11 @@
 
         // --- 7. INPUT EVENTS (SEEKING & VOLUME) ---
 
-        // Tua nhạc (Xử lý kỹ cho mobile touch)
         progressBar.addEventListener('input', (e) => {
             isSeeking = true;
             const pct = e.target.value;
             progressFill.style.width = pct + '%';
-            if(audio.duration) {
+            if(audio.duration && audio.duration !== Infinity) {
                 const time = (pct / 100) * audio.duration;
                 currentTimeEl.innerText = formatTime(time);
             }
@@ -529,18 +547,17 @@
 
         progressBar.addEventListener('change', (e) => {
             isSeeking = false;
-            if (audio.duration) {
+            if (audio.duration && audio.duration !== Infinity) {
                 audio.currentTime = (e.target.value / 100) * audio.duration;
             }
         });
 
-        // Volume
         volumeBar.addEventListener('input', (e) => {
             audio.volume = e.target.value;
             volumeFill.style.width = (e.target.value * 100) + '%';
         });
 
-        // --- 8. ADMIN LOGIC (GIỮ NGUYÊN NHƯNG TỐI ƯU UI) ---
+        // --- 8. ADMIN LOGIC ---
         
         window.openAdminModal = function() {
             document.getElementById('admin-modal').classList.remove('hidden');
@@ -623,18 +640,15 @@
             }
         };
 
-        // Sidebar Mobile
         const sidebar = document.getElementById('sidebar');
         document.getElementById('open-sidebar').onclick = () => sidebar.classList.remove('-translate-x-full');
         document.getElementById('close-sidebar').onclick = () => sidebar.classList.add('-translate-x-full');
 
-        // Binding buttons
         playPauseBtn.onclick = togglePlay;
         heroPlayBtn.onclick = togglePlay;
         document.getElementById('next-btn').onclick = nextSong;
         document.getElementById('prev-btn').onclick = prevSong;
 
-        // Start
         window.onload = init;
 
     </script>
