@@ -247,38 +247,12 @@
             </div>
         </div>
     </div>
-
-    <!-- ADMIN MODAL (Giữ nguyên tính năng, style lại cho đẹp) -->
-    <div id="admin-modal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-[#282828] w-full max-w-lg rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
-            <div class="flex items-center justify-between p-4 border-b border-white/10">
-                <h2 class="font-bold text-white text-lg">Quản lý bài hát</h2>
-                <button onclick="closeAdminModal()" class="text-gray-400 hover:text-white"><i data-lucide="x"></i></button>
-            </div>
-            <div class="p-4 overflow-y-auto space-y-4">
-                <div class="grid grid-cols-1 gap-3">
-                    <input type="text" id="input-title" class="bg-[#3e3e3e] border-none rounded p-3 text-white text-sm placeholder-gray-400 focus:ring-1 focus:ring-white outline-none" placeholder="Tên bài hát">
-                    <input type="text" id="input-artist" class="bg-[#3e3e3e] border-none rounded p-3 text-white text-sm placeholder-gray-400 focus:ring-1 focus:ring-white outline-none" placeholder="Ca sĩ">
-                    <input type="text" id="input-cover" class="bg-[#3e3e3e] border-none rounded p-3 text-white text-sm placeholder-gray-400 focus:ring-1 focus:ring-white outline-none" placeholder="Link ảnh bìa">
-                    <input type="text" id="input-url" class="bg-[#3e3e3e] border-none rounded p-3 text-white text-sm placeholder-gray-400 focus:ring-1 focus:ring-white outline-none" placeholder="Link MP3">
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="addNewSong()" class="flex-1 bg-white text-black font-bold py-3 rounded-full hover:scale-105 transition">Thêm bài hát</button>
-                    <button onclick="resetDefaultSongs()" class="px-4 bg-[#3e3e3e] text-white rounded-full font-bold"><i data-lucide="rotate-ccw" class="w-5 h-5"></i></button>
-                </div>
-                <div class="border-t border-white/10 pt-4">
-                    <h3 class="font-bold mb-2 text-sm text-gray-300">Danh sách hiện tại</h3>
-                    <div id="admin-song-list" class="space-y-2"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    
     <script>
         // --- DATA & STATE ---
         const defaultSongs = [
-            { id: 1, title: "Is There Someone Else?", artist: "DoThy", cover: "https://i.imgur.com/5GMpM1A.jpeg", url: "https://dl.dropboxusercontent.com/scl/fi/e51elb4sl0o3k51czonc5/Louisvuiton-Christmas.mp3?rlkey=gk3jeizh1nvu8mt1tyx91sed6&st=ykp0x5z4", isHidden: false },
-            { id: 2, title: "Die With A Smile", artist: "Lady Gaga, Bruno Mars", cover: "https://i.scdn.co/image/ab67616d0000b27382ea2e9e1858aa012c57cd45", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", isHidden: false }, // Demo link replaced
+            { id: 1, title: "Louisvuiton Christmas", artist: "DoThy", cover: "https://i.imgur.com/5GMpM1A.jpeg", url: "https://dl.dropboxusercontent.com/scl/fi/e51elb4sl0o3k51czonc5/Louisvuiton-Christmas.mp3?rlkey=gk3jeizh1nvu8mt1tyx91sed6&st=ykp0x5z4", isHidden: false },
+            { id: 2, title: "Ngược Dòng Thời Gian", artist: "DoThy", cover: "https://i.imgur.com/wcGOAVl.jpeg", url: "https://dl.dropboxusercontent.com/scl/fi/gztukmfa0ndcwi5kmh22i/NEW-2025-NST-NG-C-D-NG-TH-I-GIAN-DJ-THANH-TUNG.mp3?rlkey=suvvwf7157wydgh25us3q7yaj&st=pc3xy0g2", isHidden: false },
             { id: 3, title: "Starboy", artist: "The Weeknd, Daft Punk", cover: "https://i.scdn.co/image/ab67616d0000b2734718e28d24527d9c1523674d", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", isHidden: false }
         ];
 
