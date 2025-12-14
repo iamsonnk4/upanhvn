@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chào Mừng Đến Với DoThuyRemix</title>
+    <title>Zingify - Web Nghe Nhạc</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -215,50 +215,66 @@
     </div>
 
     <script>
-        // --- 1. DỮ LIỆU ---
+        // --- 1. DỮ LIỆU & LƯU TRỮ ---
         
-        // CẬP NHẬT: Đã xóa hết bài mẫu, danh sách giờ là mảng rỗng
-        const defaultSongs = [];
+        // Key lưu trữ cố định (Đổi key để đảm bảo sạch lỗi cũ)
+        const STORAGE_KEY = 'zingify_songs_final'; 
+        let allSongs = [];
 
-        // Đổi key lưu trữ để trình duyệt nhận diện là phiên bản dữ liệu mới (sạch sẽ)
-        const STORAGE_KEY = 'zingify_data_v1';
-
-        let storedData = localStorage.getItem(STORAGE_KEY);
-        let allSongs;
-
-        if (storedData === null) {
-            allSongs = [...defaultSongs];
-        } else {
+        // Hàm đọc dữ liệu an toàn
+        function loadData() {
             try {
-                allSongs = JSON.parse(storedData);
-            } catch(e) {
+                const data = localStorage.getItem(STORAGE_KEY);
+                if (data) {
+                    allSongs = JSON.parse(data);
+                } else {
+                    allSongs = [];
+                }
+            } catch (error) {
+                console.error("Lỗi đọc dữ liệu:", error);
                 allSongs = [];
             }
         }
+
+        // Hàm lưu dữ liệu an toàn
+        function saveData() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(allSongs));
+                console.log("Đã lưu dữ liệu vào LocalStorage");
+            } catch (error) {
+                console.error("Lỗi lưu dữ liệu:", error);
+                alert("Cảnh báo: Không thể lưu bài hát! Có thể bộ nhớ đầy hoặc bạn đang ở chế độ Ẩn danh.");
+            }
+        }
         
-        // Playlist thực tế
+        // --- 2. BIẾN TOÀN CỤC ---
         let playlist = []; 
         let currentIndex = 0;
         let isPlaying = false;
 
-        const audio = document.getElementById('audio-player');
-        
         // DOM Elements
+        const audio = document.getElementById('audio-player');
         const playPauseBtn = document.getElementById('play-pause-btn');
         const heroPlayBtn = document.getElementById('hero-play-btn');
         const progressBar = document.getElementById('progress-bar');
         const currentTimeEl = document.getElementById('current-time');
         const totalDurationEl = document.getElementById('total-duration');
 
-        // --- 2. LOGIC CỐT LÕI ---
+        // --- 3. LOGIC KHỞI TẠO (INIT) ---
 
         function init() {
-            if(Array.isArray(allSongs)) {
-                allSongs = allSongs.map(s => ({...s, isHidden: s.isHidden || false}));
-            } else {
+            // 1. Nạp dữ liệu từ bộ nhớ trước tiên
+            loadData();
+            
+            // 2. Kiểm tra dữ liệu hợp lệ
+            if (!Array.isArray(allSongs)) {
                 allSongs = [];
             }
+
+            // 3. Đảm bảo cấu trúc dữ liệu đúng (thêm trường isHidden nếu thiếu)
+            allSongs = allSongs.map(s => ({...s, isHidden: s.isHidden || false}));
             
+            // 4. Render giao diện
             updatePlaylist();
             
             if (playlist.length > 0) {
@@ -267,7 +283,8 @@
                 showEmptyState();
             }
             
-            lucide.createIcons();
+            // 5. Tạo icons
+            if(window.lucide) lucide.createIcons();
         }
 
         function updatePlaylist() {
@@ -276,31 +293,7 @@
             renderSongList();
         }
 
-        function saveData() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(allSongs));
-        }
-
-        // Đã cập nhật nút này thành "Xóa sạch dữ liệu" thay vì khôi phục
-        window.resetDefaultSongs = function() {
-            if(confirm("Bạn có chắc muốn XÓA TOÀN BỘ dữ liệu không? Danh sách sẽ trống trơn.")) {
-                allSongs = [];
-                saveData();
-                updatePlaylist();
-                renderAdminSongList();
-                audio.pause();
-                showEmptyState();
-                alert("Đã xóa sạch dữ liệu!");
-            }
-        };
-
-        function formatTime(seconds) {
-            if (isNaN(seconds)) return "0:00";
-            const min = Math.floor(seconds / 60);
-            const sec = Math.floor(seconds % 60);
-            return `${min}:${sec < 10 ? '0' + sec : sec}`;
-        }
-
-        // --- 3. QUẢN LÝ (ADMIN) ---
+        // --- 4. CÁC HÀM QUẢN LÝ (ADMIN) ---
 
         function openAdminModal() {
             document.getElementById('admin-modal').classList.remove('hidden');
@@ -350,7 +343,7 @@
                 `;
                 list.insertAdjacentHTML('beforeend', html);
             });
-            lucide.createIcons();
+            if(window.lucide) lucide.createIcons();
         }
 
         window.toggleSongVisibility = function(realIndex) {
@@ -358,7 +351,9 @@
             saveData();
             updatePlaylist();
             
+            // Logic xử lý nếu bài đang phát bị ẩn
             if (allSongs[realIndex].isHidden && isPlaying) {
+                 // Nếu playlist còn bài thì load bài đầu, ko thì dừng
                  if(playlist.length > 0) loadSong(0);
                  else {
                      audio.pause();
@@ -388,18 +383,21 @@
                 isHidden: false
             });
             
-            saveData();
+            saveData(); // Lưu ngay lập tức
             updatePlaylist();
             renderAdminSongList();
             
+            // Reset form
             document.getElementById('input-title').value = "";
             document.getElementById('input-url').value = "";
+            
+            alert("Đã thêm và lưu bài hát thành công!");
         };
 
         window.deleteSong = function(realIndex) {
             if(confirm('Xóa vĩnh viễn bài này?')) {
                 allSongs.splice(realIndex, 1);
-                saveData();
+                saveData(); // Lưu sau khi xóa
                 updatePlaylist();
                 renderAdminSongList();
                 
@@ -412,7 +410,20 @@
             }
         };
 
-        // --- 4. PLAYER LOGIC ---
+        // Reset toàn bộ dữ liệu
+        window.resetDefaultSongs = function() {
+            if(confirm("Bạn có chắc muốn XÓA TOÀN BỘ dữ liệu không? Danh sách sẽ trống trơn.")) {
+                allSongs = [];
+                saveData();
+                updatePlaylist();
+                renderAdminSongList();
+                audio.pause();
+                showEmptyState();
+                alert("Đã xóa sạch dữ liệu!");
+            }
+        };
+
+        // --- 5. PLAYER UI LOGIC ---
 
         function showEmptyState() {
             document.getElementById('hero-title').innerText = "Chưa có bài hát";
@@ -421,7 +432,6 @@
             document.getElementById('hero-img').src = "https://via.placeholder.com/300/18181b/FFFFFF/?text=Music"; 
             document.getElementById('song-list').innerHTML = '<p class="text-zinc-500 p-8 col-span-3 text-center border-2 border-dashed border-zinc-800 rounded-xl">Danh sách trống trơn.<br>Vào <b>Admin</b> để thêm bài hát mới.</p>';
             
-            // Xóa thông tin player nhỏ
             document.getElementById('mini-title').innerText = "...";
             document.getElementById('mini-artist').innerText = "...";
             document.getElementById('mini-cover').src = "https://via.placeholder.com/100/18181b/FFFFFF/?text=M";
@@ -482,7 +492,7 @@
             renderSongList();
         }
 
-        // --- 5. AUDIO EVENTS ---
+        // --- 6. AUDIO EVENTS ---
 
         audio.onloadedmetadata = function() {
             const duration = audio.duration;
@@ -490,13 +500,14 @@
                 const formatted = formatTime(duration);
                 totalDurationEl.innerText = formatted;
                 
+                // Cập nhật thời lượng thực tế vào CSDL
                 const currentSongData = playlist[currentIndex];
                 if(currentSongData) {
                     const realSongIndex = allSongs.findIndex(s => s.id === currentSongData.id);
                     if (realSongIndex !== -1) {
                         if (allSongs[realSongIndex].duration === "0:00" || allSongs[realSongIndex].duration === "Unknown") {
                             allSongs[realSongIndex].duration = formatted;
-                            saveData(); 
+                            saveData(); // Lưu lại thời lượng
                             renderSongList();
                             renderAdminSongList(); 
                         }
@@ -534,9 +545,13 @@
 
         function updatePlayIcons(state) {
             const icon = state === 'pause' ? 'pause' : 'play';
-            playPauseBtn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 fill-black ml-${state==='play'?0.5:0}"></i>`;
-            heroPlayBtn.innerHTML = `<i data-lucide="${icon}" class="fill-black ml-${state==='play'?1:0}"></i>`;
-            lucide.createIcons();
+            const iconHtml = `<i data-lucide="${icon}" class="w-4 h-4 fill-black ml-${state==='play'?0.5:0}"></i>`;
+            const bigIconHtml = `<i data-lucide="${icon}" class="fill-black ml-${state==='play'?1:0}"></i>`;
+            
+            playPauseBtn.innerHTML = iconHtml;
+            heroPlayBtn.innerHTML = bigIconHtml;
+            
+            if(window.lucide) lucide.createIcons();
         }
 
         function nextSong() {
@@ -551,6 +566,13 @@
             currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
             loadSong(currentIndex);
             if(isPlaying) audio.play();
+        }
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "0:00";
+            const min = Math.floor(seconds / 60);
+            const sec = Math.floor(seconds % 60);
+            return `${min}:${sec < 10 ? '0' + sec : sec}`;
         }
 
         // --- BINDING EVENTS ---
@@ -571,8 +593,8 @@
         document.getElementById('open-sidebar').onclick = () => sidebar.classList.remove('-translate-x-full');
         document.getElementById('close-sidebar').onclick = () => sidebar.classList.add('-translate-x-full');
 
-        // Start
-        init();
+        // Chạy init khi trang web đã tải xong (An toàn nhất)
+        window.onload = init;
 
     </script>
 </body>
