@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zingify - Web Nghe Nhạc</title>
+    <title>DoThy - 70% Cơ Thể Là Nhạc</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -132,9 +132,18 @@
             </div>
 
             <div class="p-6 space-y-8">
+                <!-- CẢNH BÁO LOCAL STORAGE -->
+                <div class="bg-blue-900/30 border border-blue-600/50 p-4 rounded-lg flex items-start gap-3">
+                    <i data-lucide="info" class="text-blue-500 flex-shrink-0 mt-1"></i>
+                    <div class="text-sm text-blue-200">
+                        <strong>Lưu ý khi dùng GitHub:</strong><br>
+                        Để bài hát hiện cho tất cả mọi người, hãy sửa trực tiếp biến <code>defaultSongs</code> trong file code <code>index.html</code> trước khi upload.
+                    </div>
+                </div>
+
                 <!-- Form Thêm -->
                 <div class="bg-zinc-800/50 p-6 rounded-lg border border-zinc-700">
-                    <h3 class="text-lg font-semibold mb-4 text-emerald-400">Thêm Bài Hát Mới</h3>
+                    <h3 class="text-lg font-semibold mb-4 text-emerald-400">Thêm Bài Hát (Chỉ máy này nghe được)</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input type="text" id="input-title" class="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:outline-none focus:border-emerald-500" placeholder="Tên bài hát...">
                         <input type="text" id="input-artist" class="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:outline-none focus:border-emerald-500" placeholder="Ca sĩ...">
@@ -144,17 +153,16 @@
                     <button onclick="addNewSong()" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded transition flex items-center justify-center gap-2">
                         <i data-lucide="plus"></i> Thêm Bài Hát
                     </button>
-                    <!-- Nút reset về rỗng -->
-                    <button onclick="resetDefaultSongs()" class="w-full mt-2 bg-red-900/50 hover:bg-red-900 text-red-200 font-bold py-2 px-4 rounded transition text-xs border border-red-800">
-                        Xóa tất cả dữ liệu (Reset sạch)
+                    <!-- Nút reset -->
+                    <button onclick="resetDefaultSongs()" class="w-full mt-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 font-bold py-2 px-4 rounded transition text-xs border border-zinc-600">
+                        Khôi phục danh sách gốc (Của GitHub)
                     </button>
                 </div>
 
                 <!-- Danh sách Admin -->
                 <div>
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold text-white">Danh Sách & Ẩn/Hiện</h3>
-                        <span class="text-xs text-zinc-400">* Bỏ tích để ẩn bài hát khỏi trang chủ</span>
+                        <h3 class="text-lg font-semibold text-white">Danh Sách Hiện Tại</h3>
                     </div>
                     
                     <div class="bg-zinc-800 rounded-lg overflow-hidden border border-zinc-700">
@@ -217,33 +225,55 @@
     <script>
         // --- 1. DỮ LIỆU & LƯU TRỮ ---
         
-        // Key lưu trữ cố định (Đổi key để đảm bảo sạch lỗi cũ)
-        const STORAGE_KEY = 'zingify_songs_final'; 
+        // --- KHU VỰC NHẬP BÀI HÁT ĐỂ ĐƯA LÊN GITHUB ---
+        // Bạn hãy copy link nhạc và link ảnh vào đây thì AI CŨNG SẼ THẤY
+        const defaultSongs = [
+            {
+                id: 1,
+                title: "Christmas",
+                artist: "DoThy",
+                cover: "https://i.imgur.com/tWzvF8A.jpeg",
+                url: "https://github.com/iamsonnk4/upanhvn/releases/download/1/Louisvuiton.Christmas.mp3",
+                duration: "175:13",
+                isHidden: false
+            },
+            {
+                id: 2,
+                title: "Nhạc Demo 2",
+                artist: "SoundHelix",
+                cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop",
+                url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+                duration: "7:05",
+                isHidden: false
+            }
+            // Muốn thêm bài nữa thì copy đoạn {...}, ở trên và dán xuống đây
+        ];
+
+        // Key lưu trữ mới để reset lại dữ liệu của bạn về mặc định này
+        const STORAGE_KEY = 'zingify_songs_github_v1'; 
         let allSongs = [];
 
-        // Hàm đọc dữ liệu an toàn
         function loadData() {
             try {
                 const data = localStorage.getItem(STORAGE_KEY);
                 if (data) {
                     allSongs = JSON.parse(data);
                 } else {
-                    allSongs = [];
+                    // Nếu chưa có dữ liệu cá nhân (hoặc lần đầu vào link Github)
+                    // thì dùng danh sách defaultSongs ở trên
+                    allSongs = [...defaultSongs];
                 }
             } catch (error) {
                 console.error("Lỗi đọc dữ liệu:", error);
-                allSongs = [];
+                allSongs = [...defaultSongs];
             }
         }
 
-        // Hàm lưu dữ liệu an toàn
         function saveData() {
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(allSongs));
-                console.log("Đã lưu dữ liệu vào LocalStorage");
             } catch (error) {
                 console.error("Lỗi lưu dữ liệu:", error);
-                alert("Cảnh báo: Không thể lưu bài hát! Có thể bộ nhớ đầy hoặc bạn đang ở chế độ Ẩn danh.");
             }
         }
         
@@ -263,18 +293,11 @@
         // --- 3. LOGIC KHỞI TẠO (INIT) ---
 
         function init() {
-            // 1. Nạp dữ liệu từ bộ nhớ trước tiên
             loadData();
             
-            // 2. Kiểm tra dữ liệu hợp lệ
-            if (!Array.isArray(allSongs)) {
-                allSongs = [];
-            }
-
-            // 3. Đảm bảo cấu trúc dữ liệu đúng (thêm trường isHidden nếu thiếu)
+            if (!Array.isArray(allSongs)) allSongs = [];
             allSongs = allSongs.map(s => ({...s, isHidden: s.isHidden || false}));
             
-            // 4. Render giao diện
             updatePlaylist();
             
             if (playlist.length > 0) {
@@ -283,7 +306,6 @@
                 showEmptyState();
             }
             
-            // 5. Tạo icons
             if(window.lucide) lucide.createIcons();
         }
 
@@ -351,9 +373,7 @@
             saveData();
             updatePlaylist();
             
-            // Logic xử lý nếu bài đang phát bị ẩn
             if (allSongs[realIndex].isHidden && isPlaying) {
-                 // Nếu playlist còn bài thì load bài đầu, ko thì dừng
                  if(playlist.length > 0) loadSong(0);
                  else {
                      audio.pause();
@@ -383,21 +403,20 @@
                 isHidden: false
             });
             
-            saveData(); // Lưu ngay lập tức
+            saveData();
             updatePlaylist();
             renderAdminSongList();
             
-            // Reset form
             document.getElementById('input-title').value = "";
             document.getElementById('input-url').value = "";
             
-            alert("Đã thêm và lưu bài hát thành công!");
+            alert("Đã thêm! (Lưu ý: Chỉ bạn mới thấy bài này, để hiện trên Github hãy sửa code)");
         };
 
         window.deleteSong = function(realIndex) {
             if(confirm('Xóa vĩnh viễn bài này?')) {
                 allSongs.splice(realIndex, 1);
-                saveData(); // Lưu sau khi xóa
+                saveData();
                 updatePlaylist();
                 renderAdminSongList();
                 
@@ -410,16 +429,16 @@
             }
         };
 
-        // Reset toàn bộ dữ liệu
+        // Reset về danh sách mặc định (của Github)
         window.resetDefaultSongs = function() {
-            if(confirm("Bạn có chắc muốn XÓA TOÀN BỘ dữ liệu không? Danh sách sẽ trống trơn.")) {
-                allSongs = [];
+            if(confirm("Khôi phục danh sách gốc (như trong code)?")) {
+                allSongs = [...defaultSongs];
                 saveData();
                 updatePlaylist();
                 renderAdminSongList();
-                audio.pause();
-                showEmptyState();
-                alert("Đã xóa sạch dữ liệu!");
+                if(playlist.length > 0) loadSong(0);
+                else showEmptyState();
+                alert("Đã khôi phục danh sách gốc!");
             }
         };
 
@@ -430,7 +449,7 @@
             document.getElementById('hero-artist').innerText = "...";
             document.getElementById('hero-duration').innerText = "";
             document.getElementById('hero-img').src = "https://via.placeholder.com/300/18181b/FFFFFF/?text=Music"; 
-            document.getElementById('song-list').innerHTML = '<p class="text-zinc-500 p-8 col-span-3 text-center border-2 border-dashed border-zinc-800 rounded-xl">Danh sách trống trơn.<br>Vào <b>Admin</b> để thêm bài hát mới.</p>';
+            document.getElementById('song-list').innerHTML = '<p class="text-zinc-500 p-8 col-span-3 text-center border-2 border-dashed border-zinc-800 rounded-xl">Danh sách trống trơn.</p>';
             
             document.getElementById('mini-title').innerText = "...";
             document.getElementById('mini-artist').innerText = "...";
@@ -500,14 +519,13 @@
                 const formatted = formatTime(duration);
                 totalDurationEl.innerText = formatted;
                 
-                // Cập nhật thời lượng thực tế vào CSDL
                 const currentSongData = playlist[currentIndex];
                 if(currentSongData) {
                     const realSongIndex = allSongs.findIndex(s => s.id === currentSongData.id);
                     if (realSongIndex !== -1) {
                         if (allSongs[realSongIndex].duration === "0:00" || allSongs[realSongIndex].duration === "Unknown") {
                             allSongs[realSongIndex].duration = formatted;
-                            saveData(); // Lưu lại thời lượng
+                            saveData();
                             renderSongList();
                             renderAdminSongList(); 
                         }
