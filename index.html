@@ -3,42 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>DoThy - Premium Music</title>
+    <title>DoThy Music</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
-        /* --- CONFIG & RESETS --- */
+        /* --- DESIGN SYSTEM --- */
         :root {
-            --primary: #1ed760;
-            --bg-dark: #121212;
-            --bg-card: #181818;
+            --primary: #10b981; /* Emerald 500 */
+            --primary-glow: rgba(16, 185, 129, 0.4);
+            --bg-deep: #000000;
+            --glass-bg: rgba(20, 20, 20, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
             --text-main: #ffffff;
-            --text-sub: #b3b3b3;
+            --text-sub: #a1a1aa;
         }
 
         body {
-            background-color: black;
+            background-color: var(--bg-deep);
             color: var(--text-main);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
             -webkit-tap-highlight-color: transparent;
-            overscroll-behavior-y: none; /* Chặn kéo trang trên mobile */
+            overscroll-behavior: none;
         }
 
-        /* --- CUSTOM SLIDER (Thanh trượt phong cách Spotify) --- */
+        /* --- ANIMATED BACKGROUND --- */
+        .ambient-bg {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 0% 0%, #1a2e26 0%, transparent 50%), 
+                        radial-gradient(circle at 100% 0%, #0f1f1a 0%, transparent 40%),
+                        radial-gradient(circle at 100% 100%, #131c18 0%, transparent 50%);
+            z-index: -1;
+            animation: pulseBg 10s ease-in-out infinite alternate;
+        }
+        @keyframes pulseBg {
+            0% { opacity: 0.8; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.05); }
+        }
+
+        /* --- CUSTOM SLIDER --- */
         input[type=range] {
             -webkit-appearance: none;
             background: transparent;
             height: 4px;
-            border-radius: 2px;
             cursor: pointer;
             width: 100%;
             position: relative;
-            z-index: 20;
         }
-        
-        /* Thumb (Cục tròn kéo) */
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
             height: 12px;
@@ -46,324 +59,335 @@
             border-radius: 50%;
             background: white;
             margin-top: -4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
             transition: transform 0.1s;
-            opacity: 0; /* Ẩn mặc định, hiện khi hover group */
+            opacity: 0;
         }
-        
-        .group:hover input[type=range]::-webkit-slider-thumb {
-            opacity: 1;
-        }
-
-        input[type=range]:active::-webkit-slider-thumb {
-            transform: scale(1.3);
-            opacity: 1;
-        }
-
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
-            background: transparent; 
-        }
+        .group:hover input[type=range]::-webkit-slider-thumb { opacity: 1; }
+        input[type=range]:active::-webkit-slider-thumb { transform: scale(1.5); opacity: 1; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: transparent; }
 
         /* --- UTILITIES --- */
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
+        /* Glassmorphism Classes */
         .glass-panel {
-            background: rgba(30, 30, 30, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-top: 1px solid rgba(255,255,255,0.1);
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+        }
+        
+        .glass-panel-light {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        .line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        /* Spinning Record Animation */
+        .spin-slow { animation: spin 8s linear infinite; }
+        .spin-paused { animation-play-state: paused; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* Animation Equalizer */
-        @keyframes equalizer {
-            0% { height: 3px; }
-            50% { height: 15px; }
-            100% { height: 3px; }
+        /* Audio Wave Animation */
+        .wave-bar {
+            width: 4px;
+            background: var(--primary);
+            border-radius: 99px;
+            animation: wave 1s ease-in-out infinite;
         }
-        .eq-bar {
-            width: 3px;
-            background-color: var(--primary);
-            animation: equalizer 1s infinite ease-in-out;
+        @keyframes wave {
+            0%, 100% { height: 10%; opacity: 0.5; }
+            50% { height: 100%; opacity: 1; }
         }
-        .eq-bar:nth-child(2) { animation-delay: 0.2s; }
-        .eq-bar:nth-child(3) { animation-delay: 0.4s; }
+        .playing .wave-bar { animation-play-state: running; }
+        .paused .wave-bar { animation-play-state: paused; height: 10%; }
 
-        /* Safe Area for iPhone X+ */
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden select-none bg-black text-white">
+<body class="h-screen flex flex-col overflow-hidden text-sm md:text-base">
 
-    <!-- AUDIO ENGINE -->
-    <audio id="audio-player" preload="auto" playsinline webkit-playsinline></audio>
+    <div class="ambient-bg"></div>
+    <audio id="audio-player" preload="auto"></audio>
 
-    <div class="flex flex-1 overflow-hidden relative">
+    <div class="flex flex-1 overflow-hidden relative z-10">
         
         <!-- SIDEBAR (Desktop) -->
-        <aside class="hidden md:flex w-[280px] bg-black flex-col gap-2 p-2 resize-x">
-            <div class="bg-[#121212] rounded-xl p-6 flex flex-col gap-6">
-                <div class="flex items-center gap-3 text-white font-black text-xl px-2">
-                    <i data-lucide="music-4" class="w-8 h-8 text-emerald-500"></i> 
-                    <span>DoThy Music</span>
+        <aside class="hidden md:flex w-[260px] flex-col gap-3 p-3">
+            <div class="glass-panel rounded-2xl p-5 flex flex-col gap-6 h-full">
+                <!-- Logo -->
+                <div class="flex items-center gap-3 px-2">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-400 to-cyan-500 flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                        <i data-lucide="music-2" class="w-5 h-5 text-black font-bold"></i>
+                    </div>
+                    <span class="font-bold text-lg tracking-wide">DoThy Music</span>
                 </div>
-                <nav class="space-y-2">
-                    <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-lg text-white bg-white/10 font-bold transition hover:bg-white/20">
-                        <i data-lucide="home"></i> Trang chủ
+
+                <!-- Nav -->
+                <nav class="space-y-1">
+                    <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/10 text-white font-medium transition shadow-inner">
+                        <i data-lucide="home" class="w-5 h-5"></i> Khám phá
                     </a>
-                    <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-lg text-[#b3b3b3] hover:text-white font-bold transition hover:bg-white/5">
-                        <i data-lucide="search"></i> Tìm kiếm
+                    <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition font-medium">
+                        <i data-lucide="search" class="w-5 h-5"></i> Tìm kiếm
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition font-medium">
+                        <i data-lucide="heart" class="w-5 h-5"></i> Yêu thích
                     </a>
                 </nav>
-            </div>
-            
-            <div class="bg-[#121212] rounded-xl flex-1 p-4 flex flex-col">
-                <div class="flex items-center justify-between text-[#b3b3b3] px-2 mb-4">
-                    <div class="flex items-center gap-2 font-bold hover:text-white cursor-pointer transition">
-                        <i data-lucide="library"></i> Thư viện
+
+                <!-- Library Section -->
+                <div class="mt-auto">
+                    <div class="flex items-center justify-between text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-2">
+                        <span>Thư viện</span>
+                        <button onclick="openAdminModal()" class="hover:text-white transition"><i data-lucide="plus-circle" class="w-4 h-4"></i></button>
                     </div>
-                    <button onclick="openAdminModal()" class="hover:text-white p-2 hover:bg-white/10 rounded-full transition"><i data-lucide="plus"></i></button>
-                </div>
-                
-                <!-- Library Content -->
-                <div class="flex-1 overflow-y-auto no-scrollbar space-y-2">
-                    <div class="bg-gradient-to-br from-[#2a2a2a] to-[#1a1a1a] p-5 rounded-lg border border-white/5">
-                        <p class="font-bold text-white text-lg mb-2">Tạo playlist của bạn</p>
-                        <p class="text-sm text-gray-400 mb-4 leading-relaxed">Dễ dàng quản lý kho nhạc cá nhân.</p>
-                        <button onclick="openAdminModal()" class="bg-white text-black text-sm font-bold px-6 py-2 rounded-full hover:scale-105 transition shadow-lg shadow-white/10">Quản lý nhạc</button>
+                    
+                    <div class="h-[150px] overflow-y-auto no-scrollbar space-y-2 pr-1">
+                        <div onclick="openAdminModal()" class="glass-panel-light p-3 rounded-xl cursor-pointer hover:bg-white/5 transition group">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition">
+                                    <i data-lucide="list-music" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-white">Quản lý nhạc</p>
+                                    <p class="text-[10px] text-gray-400">Thêm bài hát mới</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </aside>
 
-        <!-- MAIN CONTENT -->
-        <main class="flex-1 bg-gradient-to-b from-[#1e1e1e] to-[#121212] md:rounded-xl md:my-2 md:mr-2 overflow-y-auto no-scrollbar relative w-full scroll-smooth">
-            
-            <!-- Dynamic Background Header -->
-            <div id="header-gradient" class="absolute inset-0 h-[400px] bg-gradient-to-b from-emerald-900/60 via-[#121212]/90 to-[#121212] pointer-events-none transition-colors duration-700"></div>
-
-            <!-- Mobile Header -->
-            <div class="sticky top-0 z-40 flex items-center justify-between p-4 md:hidden glass-panel border-b-0">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-black font-bold shadow-lg shadow-emerald-500/20">D</div>
-                    <span class="font-black text-lg tracking-tight">DoThy</span>
-                </div>
-                <button onclick="openAdminModal()" class="p-2 text-white hover:bg-white/10 rounded-full"><i data-lucide="settings-2"></i></button>
-            </div>
-
-            <div class="relative z-10 px-4 pb-40 md:p-8">
+        <!-- MAIN VIEW -->
+        <main class="flex-1 md:py-3 md:pr-3 overflow-hidden flex flex-col relative w-full">
+            <div class="glass-panel md:rounded-2xl flex-1 flex flex-col overflow-hidden relative border-x-0 border-t-0 md:border">
                 
-                <!-- HERO SECTION -->
-                <div class="flex flex-col md:flex-row gap-8 items-center md:items-end mb-10 mt-6 md:mt-0">
-                    <div class="relative group shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-lg md:rounded-xl overflow-hidden transition-transform duration-300 hover:scale-[1.02]">
-                         <img id="hero-img" src="" class="w-56 h-56 md:w-64 md:h-64 object-cover bg-[#282828]">
-                    </div>
+                <!-- Header Gradient Overlay -->
+                <div class="absolute inset-0 h-[350px] bg-gradient-to-b from-emerald-900/40 to-transparent pointer-events-none z-0"></div>
+
+                <!-- Scrollable Content -->
+                <div class="flex-1 overflow-y-auto no-scrollbar relative z-10 p-4 md:p-8 pb-32">
                     
-                    <div class="flex flex-col gap-2 items-center md:items-start text-center md:text-left flex-1 min-w-0">
-                        <span class="text-xs font-bold uppercase tracking-widest text-emerald-400 hidden md:block mb-2">Playlist Nổi Bật</span>
-                        <h1 id="hero-title" class="text-3xl md:text-7xl font-black mb-2 leading-tight tracking-tighter line-clamp-2 md:line-clamp-3">...</h1>
-                        
-                        <div class="flex items-center flex-wrap justify-center md:justify-start gap-2 text-gray-300 text-sm md:text-base font-medium">
-                            <img id="hero-artist-avatar" src="" class="w-6 h-6 rounded-full hidden md:block bg-gray-600">
-                            <span id="hero-artist" class="text-white font-bold hover:underline cursor-pointer">...</span>
-                            <span class="text-gray-500">•</span>
-                            <span class="text-gray-400" id="hero-year">2025</span>
-                            <span class="text-gray-500">•</span>
-                            <span class="font-bold text-emerald-400">Đang phát</span>
+                    <!-- Mobile Header -->
+                    <div class="md:hidden flex justify-between items-center mb-6 sticky top-0 z-50 py-2 -mx-4 px-4 backdrop-blur-md bg-black/20">
+                        <div class="flex items-center gap-2">
+                             <div class="w-8 h-8 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 flex items-center justify-center font-bold text-xs shadow-lg">DT</div>
+                        </div>
+                        <button onclick="openAdminModal()"><i data-lucide="settings-2" class="w-6 h-6"></i></button>
+                    </div>
+
+                    <!-- HERO: Now Playing Info -->
+                    <div class="flex flex-col md:flex-row gap-8 items-center md:items-end mb-8 transition-all">
+                        <!-- Cover Art with Visualizer Effect -->
+                        <div class="relative group">
+                            <div class="absolute inset-0 bg-emerald-500 rounded-2xl blur-2xl opacity-20 group-hover:opacity-40 transition duration-700"></div>
+                            <img id="hero-img" src="" class="relative w-52 h-52 md:w-60 md:h-60 rounded-2xl shadow-2xl object-cover z-10 transition transform group-hover:scale-[1.02]">
+                            
+                            <!-- Mini Wave Visualizer (Fake) -->
+                            <div id="hero-visualizer" class="absolute bottom-4 right-4 z-20 flex gap-1 h-8 items-end p-2 bg-black/40 backdrop-blur-md rounded-lg paused">
+                                <div class="wave-bar h-3" style="animation-duration: 0.6s"></div>
+                                <div class="wave-bar h-5" style="animation-duration: 0.8s"></div>
+                                <div class="wave-bar h-2" style="animation-duration: 0.5s"></div>
+                                <div class="wave-bar h-4" style="animation-duration: 0.7s"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 text-center md:text-left space-y-2">
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Top Hits 2025
+                            </div>
+                            <h1 id="hero-title" class="text-3xl md:text-6xl font-black leading-tight tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-white to-gray-400 line-clamp-2">...</h1>
+                            <div class="text-gray-400 font-medium text-lg flex items-center justify-center md:justify-start gap-2">
+                                <span id="hero-artist" class="text-white hover:underline cursor-pointer">...</span>
+                            </div>
+                            
+                            <!-- Controls Row -->
+                            <div class="flex items-center justify-center md:justify-start gap-4 mt-6">
+                                <button onclick="togglePlay()" class="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+                                    <i id="hero-icon-play" data-lucide="play" class="fill-black ml-1 w-6 h-6"></i>
+                                    <i id="hero-icon-pause" data-lucide="pause" class="fill-black w-6 h-6 hidden"></i>
+                                </button>
+                                <button class="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 hover:border-white/30 transition text-gray-300 hover:text-red-400">
+                                    <i data-lucide="heart" class="w-5 h-5"></i>
+                                </button>
+                                <button class="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 hover:border-white/30 transition text-gray-300">
+                                    <i data-lucide="share-2" class="w-5 h-5"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- ACTION BUTTONS -->
-                <div class="flex items-center gap-8 mb-8">
-                    <button id="hero-play-btn" onclick="togglePlay()" class="w-16 h-16 bg-[#1ed760] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition shadow-[0_8px_24px_rgba(30,215,96,0.4)] text-black group">
-                        <!-- Play Icon -->
-                        <span class="hero-icon-play block">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                        </span>
-                        <!-- Pause Icon -->
-                        <span class="hero-icon-pause hidden">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-                        </span>
-                    </button>
-                    
-                    <button class="text-[#b3b3b3] hover:text-red-500 hover:scale-110 transition"><i data-lucide="heart" class="w-8 h-8"></i></button>
-                    <button class="text-[#b3b3b3] hover:text-white transition"><i data-lucide="more-horizontal" class="w-8 h-8"></i></button>
-                </div>
+                    <!-- Song List -->
+                    <div class="space-y-4">
+                        <h3 class="text-xl font-bold px-2">Tiếp theo</h3>
+                        
+                        <!-- Header Row -->
+                        <div class="grid grid-cols-[40px_1fr_60px] md:grid-cols-[50px_1fr_100px_80px] px-3 text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-white/5 pb-2">
+                            <div class="text-center">#</div>
+                            <div>Bài hát</div>
+                            <div class="hidden md:block text-right">Lượt nghe</div>
+                            <div class="text-right">Thời gian</div>
+                        </div>
 
-                <!-- SONG LIST TABLE -->
-                <div>
-                    <!-- Header Table -->
-                    <div class="grid grid-cols-[auto_1fr_auto] gap-4 px-4 py-2 border-b border-white/10 text-sm text-[#b3b3b3] font-medium sticky top-16 md:top-0 bg-[#121212] z-20 mb-2">
-                        <span class="w-6 text-center">#</span>
-                        <span>Tiêu đề</span>
-                        <span class="flex justify-end"><i data-lucide="clock" class="w-4 h-4"></i></span>
+                        <div id="song-list" class="space-y-1">
+                            <!-- JS Render -->
+                        </div>
                     </div>
 
-                    <div id="song-list" class="flex flex-col gap-1">
-                        <!-- JS renders items here -->
-                    </div>
+                    <!-- Footer Spacer -->
+                    <div class="h-10"></div>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- MODAL: ADD/MANAGE SONGS -->
-    <div id="admin-modal" class="hidden fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-[#242424] w-full max-w-lg rounded-2xl shadow-2xl border border-white/10 overflow-hidden flex flex-col max-h-[80vh]">
-            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-[#2a2a2a]">
-                <h3 class="text-xl font-bold text-white flex items-center gap-2"><i data-lucide="list-music"></i> Quản lý Playlist</h3>
-                <button onclick="closeAdminModal()" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+    <!-- ADMIN MODAL (Dialog Style) -->
+    <div id="admin-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeAdminModal()"></div>
+        
+        <!-- Content -->
+        <div class="relative w-full max-w-lg bg-[#18181b] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-[fadeIn_0.2s_ease-out]">
+            <div class="p-5 border-b border-white/10 flex justify-between items-center bg-white/5">
+                <h3 class="font-bold text-lg">Quản lý thư viện</h3>
+                <button onclick="closeAdminModal()" class="p-1 hover:bg-white/10 rounded-full transition"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             
-            <div class="p-6 overflow-y-auto">
-                <!-- Add Form -->
-                <div class="grid gap-3 mb-6">
-                    <input id="input-title" type="text" placeholder="Tên bài hát..." class="bg-[#3e3e3e] text-white p-3 rounded-lg border border-transparent focus:border-emerald-500 outline-none transition">
-                    <input id="input-artist" type="text" placeholder="Ca sĩ..." class="bg-[#3e3e3e] text-white p-3 rounded-lg border border-transparent focus:border-emerald-500 outline-none transition">
-                    <input id="input-url" type="text" placeholder="Link MP3 (URL)..." class="bg-[#3e3e3e] text-white p-3 rounded-lg border border-transparent focus:border-emerald-500 outline-none transition">
-                    <input id="input-cover" type="text" placeholder="Link Ảnh Bìa (URL)..." class="bg-[#3e3e3e] text-white p-3 rounded-lg border border-transparent focus:border-emerald-500 outline-none transition">
-                    <div class="flex gap-2">
-                        <input id="input-duration" type="text" placeholder="Thời lượng (VD: 4:05)..." class="bg-[#3e3e3e] text-white p-3 rounded-lg border border-transparent focus:border-emerald-500 outline-none transition flex-1">
-                        <button onclick="addNewSong()" class="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-6 py-3 rounded-lg transition shadow-lg shadow-emerald-500/20">Thêm</button>
+            <div class="p-5 overflow-y-auto space-y-6">
+                <!-- Add Section -->
+                <div class="space-y-3">
+                    <label class="text-xs font-bold text-gray-500 uppercase">Thêm bài mới</label>
+                    <div class="grid gap-2">
+                        <input id="input-title" type="text" placeholder="Tên bài hát..." class="w-full bg-black/40 border border-white/10 rounded-lg p-3 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition text-sm">
+                        <div class="grid grid-cols-2 gap-2">
+                            <input id="input-artist" type="text" placeholder="Nghệ sĩ..." class="bg-black/40 border border-white/10 rounded-lg p-3 outline-none focus:border-emerald-500 transition text-sm">
+                            <input id="input-duration" type="text" placeholder="Thời lượng (4:20)..." class="bg-black/40 border border-white/10 rounded-lg p-3 outline-none focus:border-emerald-500 transition text-sm">
+                        </div>
+                        <input id="input-url" type="text" placeholder="Link MP3..." class="w-full bg-black/40 border border-white/10 rounded-lg p-3 focus:border-emerald-500 outline-none transition text-sm">
+                        <input id="input-cover" type="text" placeholder="Link ảnh bìa..." class="w-full bg-black/40 border border-white/10 rounded-lg p-3 focus:border-emerald-500 outline-none transition text-sm">
+                        
+                        <button onclick="addNewSong()" class="w-full bg-white text-black font-bold py-3 rounded-lg hover:bg-gray-200 transition shadow-lg mt-1">Thêm vào danh sách</button>
                     </div>
                 </div>
 
-                <!-- List to Edit -->
-                <h4 class="text-sm font-bold text-gray-400 uppercase mb-3">Danh sách hiện tại</h4>
-                <div id="admin-song-list" class="space-y-2">
-                    <!-- JS Render -->
+                <!-- List Section -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-bold text-gray-500 uppercase">Danh sách hiện tại</label>
+                        <button onclick="resetDefaultSongs()" class="text-xs text-red-400 hover:text-red-300 underline">Reset mặc định</button>
+                    </div>
+                    <div id="admin-song-list" class="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+                        <!-- JS Render -->
+                    </div>
                 </div>
-            </div>
-            
-            <div class="p-4 bg-[#1a1a1a] border-t border-white/10 flex justify-between">
-                <button onclick="resetDefaultSongs()" class="text-xs text-red-400 hover:text-red-300 underline">Khôi phục mặc định</button>
-                <button onclick="closeAdminModal()" class="text-sm font-bold text-white hover:underline">Đóng</button>
             </div>
         </div>
     </div>
 
-    <!-- MOBILE PLAYER (Floating) -->
-    <div id="mobile-player" class="md:hidden fixed bottom-[68px] left-3 right-3 glass-panel rounded-xl p-2 flex items-center gap-3 shadow-2xl z-50 transition-all duration-300 translate-y-32 border border-white/10">
-        <img id="mobile-mini-cover" src="" class="w-12 h-12 rounded-lg bg-zinc-800 object-cover flex-shrink-0 shadow-md">
+    <!-- PLAYER BAR (Bottom Fixed) -->
+    <div class="fixed bottom-0 left-0 right-0 z-50">
         
-        <div class="flex-1 min-w-0 flex flex-col justify-center" onclick="expandPlayer()">
-            <h4 id="mobile-mini-title" class="text-sm font-bold text-white truncate leading-tight">...</h4>
-            <p id="mobile-mini-artist" class="text-xs text-gray-300 truncate">...</p>
-        </div>
-        
-        <div class="flex items-center gap-1 pr-1">
-            <button class="text-gray-300 p-2" onclick="toggleFavoriteMobile(this)"><i data-lucide="heart" class="w-5 h-5"></i></button>
-            <button class="text-white p-2 focus:outline-none bg-white/10 rounded-full" onclick="togglePlay()">
-                <span class="mobile-icon-play block"><i data-lucide="play" class="fill-white w-5 h-5 ml-0.5"></i></span>
-                <span class="mobile-icon-pause hidden"><i data-lucide="pause" class="fill-white w-5 h-5"></i></span>
+        <!-- Mobile Mini Player -->
+        <div id="mobile-player" class="md:hidden absolute bottom-[65px] left-2 right-2 glass-panel rounded-2xl p-2 pr-4 flex items-center gap-3 shadow-[0_8px_30px_rgba(0,0,0,0.5)] translate-y-32 transition-transform duration-300">
+            <img id="mobile-mini-cover" src="" class="w-12 h-12 rounded-xl object-cover shadow-md spin-paused spin-slow">
+            <div class="flex-1 min-w-0" onclick="expandPlayer()">
+                <h4 id="mobile-mini-title" class="font-bold text-sm truncate">...</h4>
+                <p id="mobile-mini-artist" class="text-xs text-gray-400 truncate">...</p>
+            </div>
+            <button onclick="togglePlay()" class="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center shadow-lg active:scale-95 transition">
+                <i id="mobile-icon-play" data-lucide="play" class="fill-black w-4 h-4 ml-0.5"></i>
+                <i id="mobile-icon-pause" data-lucide="pause" class="fill-black w-4 h-4 hidden"></i>
             </button>
-        </div>
-        
-        <!-- Progress Bar Mini -->
-        <div class="absolute bottom-0 left-2 right-2 h-[2px] bg-white/20 rounded-full overflow-hidden">
-            <div id="mobile-progress-fill" class="h-full bg-emerald-500 w-0 transition-all duration-300"></div>
-        </div>
-    </div>
-
-    <!-- BOTTOM NAV (Mobile) -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-xl h-[60px] border-t border-white/10 flex justify-around items-center z-50 pb-safe">
-        <div class="flex flex-col items-center justify-center w-full h-full text-white cursor-pointer group">
-            <i data-lucide="home" class="w-6 h-6 mb-0.5 group-hover:scale-110 transition"></i>
-            <span class="text-[10px] font-medium">Trang chủ</span>
-        </div>
-        <div class="flex flex-col items-center justify-center w-full h-full text-[#b3b3b3] cursor-pointer hover:text-white group">
-            <i data-lucide="search" class="w-6 h-6 mb-0.5 group-hover:scale-110 transition"></i>
-            <span class="text-[10px] font-medium">Tìm kiếm</span>
-        </div>
-        <div class="flex flex-col items-center justify-center w-full h-full text-[#b3b3b3] cursor-pointer hover:text-white group">
-            <i data-lucide="library" class="w-6 h-6 mb-0.5 group-hover:scale-110 transition"></i>
-            <span class="text-[10px] font-medium">Thư viện</span>
-        </div>
-    </nav>
-
-    <!-- DESKTOP PLAYER BAR -->
-    <div class="hidden md:grid fixed bottom-0 left-0 right-0 h-[90px] bg-[#181818] border-t border-[#282828] px-6 grid-cols-3 items-center z-50">
-        
-        <!-- Left: Info -->
-        <div class="flex items-center gap-4">
-            <div class="relative group">
-                <img id="desktop-mini-cover" src="" class="w-14 h-14 rounded bg-zinc-800 object-cover shadow-lg transition duration-300 group-hover:opacity-80">
-                <button onclick="toggleExpandCover()" class="absolute top-1 right-1 bg-black/50 p-1 rounded-full opacity-0 group-hover:opacity-100 transition"><i data-lucide="maximize-2" class="w-3 h-3 text-white"></i></button>
+            <!-- Mobile Progress Line -->
+            <div class="absolute bottom-0 left-4 right-4 h-[2px] bg-white/10 rounded-full overflow-hidden">
+                <div id="mobile-progress-fill" class="h-full bg-emerald-500 w-0 transition-all duration-300"></div>
             </div>
-            <div class="flex flex-col justify-center">
-                <h4 id="desktop-mini-title" class="text-sm font-bold text-white hover:underline cursor-pointer line-clamp-1">...</h4>
-                <span id="desktop-mini-artist" class="text-xs text-[#b3b3b3] hover:underline cursor-pointer hover:text-white line-clamp-1">...</span>
-            </div>
-            <button class="text-[#b3b3b3] hover:text-emerald-500 hover:scale-110 transition ml-2"><i data-lucide="heart" class="w-4 h-4"></i></button>
         </div>
 
-        <!-- Center: Controls -->
-        <div class="flex flex-col items-center w-full max-w-[600px] mx-auto gap-1">
-            <div class="flex items-center gap-6">
-                <button class="text-[#b3b3b3] hover:text-white transition hover:scale-110"><i data-lucide="shuffle" class="w-4 h-4"></i></button>
-                <button id="prev-btn" class="text-[#b3b3b3] hover:text-white transition hover:scale-110"><i data-lucide="skip-back" class="w-5 h-5 fill-current"></i></button>
-                
-                <button id="play-pause-desktop" onclick="togglePlay()" class="bg-white rounded-full p-2 hover:scale-105 active:scale-95 transition flex items-center justify-center w-9 h-9 shadow-lg">
-                    <span class="desktop-icon-play block"><i data-lucide="play" class="w-4 h-4 text-black fill-black ml-0.5"></i></span>
-                    <span class="desktop-icon-pause hidden"><i data-lucide="pause" class="w-4 h-4 text-black fill-black"></i></span>
-                </button>
-                
-                <button id="next-btn" class="text-[#b3b3b3] hover:text-white transition hover:scale-110"><i data-lucide="skip-forward" class="w-5 h-5 fill-current"></i></button>
-                <button class="text-[#b3b3b3] hover:text-white transition hover:scale-110"><i data-lucide="repeat" class="w-4 h-4"></i></button>
-            </div>
-            
-            <div class="flex items-center gap-2 w-full text-xs font-mono text-[#b3b3b3] mt-1 group">
-                <span id="current-time" class="min-w-[40px] text-right">0:00</span>
-                <div class="relative flex-1 h-1 bg-[#4d4d4d] rounded-full cursor-pointer">
-                    <div id="progress-fill" class="absolute top-0 left-0 h-full bg-white rounded-full group-hover:bg-emerald-500 w-0 transition-colors"></div>
-                    <input id="progress-bar" type="range" min="0" max="100" value="0" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+        <!-- Desktop Dock -->
+        <div class="hidden md:grid h-[88px] glass-panel border-x-0 border-b-0 px-6 grid-cols-[1fr_2fr_1fr] items-center gap-4 bg-black/90">
+            <!-- Left -->
+            <div class="flex items-center gap-4 min-w-0">
+                <div class="relative group cursor-pointer">
+                    <img id="desktop-mini-cover" src="" class="w-14 h-14 rounded-lg object-cover shadow-lg group-hover:opacity-50 transition">
+                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                        <i data-lucide="chevrons-up" class="w-6 h-6 text-white"></i>
+                    </div>
                 </div>
-                <span id="total-duration" class="min-w-[40px]">0:00</span>
+                <div class="flex flex-col min-w-0">
+                    <span id="desktop-mini-title" class="font-bold hover:underline cursor-pointer truncate text-sm">...</span>
+                    <span id="desktop-mini-artist" class="text-xs text-gray-400 hover:text-white cursor-pointer truncate">...</span>
+                </div>
+                <button class="text-gray-400 hover:text-emerald-500 transition"><i data-lucide="heart" class="w-4 h-4"></i></button>
             </div>
-        </div>
 
-        <!-- Right: Volume -->
-        <div class="flex items-center justify-end gap-3 w-full">
-            <button class="text-[#b3b3b3] hover:text-white"><i data-lucide="mic-2" class="w-4 h-4"></i></button>
-            <button class="text-[#b3b3b3] hover:text-white"><i data-lucide="layers" class="w-4 h-4"></i></button>
-            <div class="flex items-center gap-2 w-28 group">
-                <button id="vol-icon" class="text-[#b3b3b3] hover:text-white" onclick="toggleMute()"><i data-lucide="volume-2" class="w-5 h-5"></i></button>
-                <div class="relative flex-1 h-1 bg-[#4d4d4d] rounded-full">
-                     <div id="volume-fill" class="absolute top-0 left-0 h-full bg-white group-hover:bg-emerald-500 rounded-full w-full"></div>
-                     <input id="volume-bar" type="range" min="0" max="1" step="0.01" value="1" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+            <!-- Center -->
+            <div class="flex flex-col items-center gap-2 w-full max-w-lg mx-auto">
+                <div class="flex items-center gap-6">
+                    <button class="text-gray-400 hover:text-white transition hover:scale-110"><i data-lucide="shuffle" class="w-4 h-4"></i></button>
+                    <button id="prev-btn" class="text-gray-200 hover:text-white transition hover:scale-110"><i data-lucide="skip-back" class="w-5 h-5 fill-current"></i></button>
+                    <button onclick="togglePlay()" class="w-8 h-8 bg-white rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition">
+                        <i id="desktop-icon-play" data-lucide="play" class="w-4 h-4 text-black fill-black ml-0.5"></i>
+                        <i id="desktop-icon-pause" data-lucide="pause" class="w-4 h-4 text-black fill-black hidden"></i>
+                    </button>
+                    <button id="next-btn" class="text-gray-200 hover:text-white transition hover:scale-110"><i data-lucide="skip-forward" class="w-5 h-5 fill-current"></i></button>
+                    <button class="text-gray-400 hover:text-white transition hover:scale-110"><i data-lucide="repeat" class="w-4 h-4"></i></button>
+                </div>
+                <div class="flex items-center gap-3 w-full text-xs font-mono text-gray-400">
+                    <span id="current-time">0:00</span>
+                    <div class="relative flex-1 h-1 bg-white/10 rounded-full group cursor-pointer">
+                        <div id="progress-fill" class="absolute top-0 left-0 h-full bg-emerald-500 rounded-full group-hover:bg-emerald-400 w-0 transition-all"></div>
+                        <input id="progress-bar" type="range" min="0" max="100" value="0" class="absolute inset-0 opacity-0 z-20">
+                    </div>
+                    <span id="total-duration">0:00</span>
                 </div>
             </div>
-            <button class="text-[#b3b3b3] hover:text-white"><i data-lucide="maximize-2" class="w-4 h-4"></i></button>
+
+            <!-- Right -->
+            <div class="flex items-center justify-end gap-3">
+                <i data-lucide="mic-2" class="w-4 h-4 text-gray-400"></i>
+                <div class="flex items-center gap-2 w-24 group">
+                    <button onclick="toggleMute()"><i data-lucide="volume-2" class="w-4 h-4 text-gray-400 group-hover:text-white"></i></button>
+                    <div class="relative flex-1 h-1 bg-white/10 rounded-full">
+                        <div id="volume-fill" class="absolute top-0 left-0 h-full bg-white rounded-full w-full"></div>
+                        <input id="volume-bar" type="range" min="0" max="1" step="0.1" value="1" class="absolute inset-0 opacity-0 z-20">
+                    </div>
+                </div>
+            </div>
         </div>
+        
+        <!-- Mobile Nav -->
+        <nav class="md:hidden h-[60px] bg-black/80 backdrop-blur-xl border-t border-white/10 flex justify-around items-center pb-safe">
+            <button class="flex flex-col items-center text-white"><i data-lucide="home" class="w-6 h-6"></i><span class="text-[10px]">Home</span></button>
+            <button class="flex flex-col items-center text-gray-500"><i data-lucide="search" class="w-6 h-6"></i><span class="text-[10px]">Tìm</span></button>
+            <button class="flex flex-col items-center text-gray-500"><i data-lucide="library" class="w-6 h-6"></i><span class="text-[10px]">Thư viện</span></button>
+        </nav>
     </div>
-    
+
     <script>
-        // --- DATA ---
-        // Thêm trường duration vào data mặc định
+        // --- CORE DATA ---
         const defaultSongs = [
-            { id: 1, title: "Louisvuiton Christmas", artist: "DoThy", cover: "https://i.imgur.com/5GMpM1A.jpeg", url: "https://dl.dropboxusercontent.com/scl/fi/e51elb4sl0o3k51czonc5/Louisvuiton-Christmas.mp3?rlkey=gk3jeizh1nvu8mt1tyx91sed6&st=ykp0x5z4", duration: "3:42", isHidden: false },
-            { id: 2, title: "Ngược Dòng Thời Gian", artist: "DoThy (Remix)", cover: "https://i.imgur.com/wcGOAVl.jpeg", url: "https://dl.dropboxusercontent.com/scl/fi/gztukmfa0ndcwi5kmh22i/NEW-2025-NST-NG-C-D-NG-TH-I-GIAN-DJ-THANH-TUNG.mp3?rlkey=suvvwf7157wydgh25us3q7yaj&st=pc3xy0g2", duration: "4:15", isHidden: false },
-            { id: 3, title: "Starboy", artist: "The Weeknd, Daft Punk", cover: "https://i.scdn.co/image/ab67616d0000b2734718e28d24527d9c1523674d", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", duration: "6:12", isHidden: false },
-            { id: 4, title: "Midnight City", artist: "M83", cover: "https://i.scdn.co/image/ab67616d0000b27320556396e8e8188165b45071", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", duration: "7:05", isHidden: false }
+            { id: 1, title: "Louisvuiton Christmas", artist: "DoThy", cover: "https://i.imgur.com/5GMpM1A.jpeg", url: "https://dl.dropboxusercontent.com/scl/fi/e51elb4sl0o3k51czonc5/Louisvuiton-Christmas.mp3?rlkey=gk3jeizh1nvu8mt1tyx91sed6&st=ykp0x5z4", duration: "3:42", views: "1.2M", isHidden: false },
+            { id: 2, title: "Ngược Dòng Thời Gian", artist: "DoThy (Remix)", cover: "https://i.imgur.com/wcGOAVl.jpeg", url: "https://dl.dropboxusercontent.com/scl/fi/gztukmfa0ndcwi5kmh22i/NEW-2025-NST-NG-C-D-NG-TH-I-GIAN-DJ-THANH-TUNG.mp3?rlkey=suvvwf7157wydgh25us3q7yaj&st=pc3xy0g2", duration: "4:15", views: "850K", isHidden: false },
+            { id: 3, title: "Starboy", artist: "The Weeknd, Daft Punk", cover: "https://i.scdn.co/image/ab67616d0000b2734718e28d24527d9c1523674d", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", duration: "6:12", views: "2.5B", isHidden: false },
+            { id: 4, title: "Midnight City", artist: "M83", cover: "https://i.scdn.co/image/ab67616d0000b27320556396e8e8188165b45071", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", duration: "7:05", views: "900M", isHidden: false }
         ];
 
-        const STORAGE_KEY = 'dothy_remix_v2';
         let allSongs = [];
         let playlist = [];
         let currentIndex = 0;
         let isPlaying = false;
         let isSeeking = false;
         let lastVolume = 1;
+        const STORAGE_KEY = 'dothy_pro_v3';
 
         // --- DOM ---
         const audio = document.getElementById('audio-player');
-        
+
         // --- INIT ---
         function init() {
             try {
@@ -372,10 +396,9 @@
             } catch(e) { allSongs = [...defaultSongs]; }
             
             updatePlaylist();
-            setupEventListeners();
+            setupEvents();
             
             if(playlist.length > 0) {
-                // Load bài đầu tiên nhưng không play
                 loadSongUI(0);
                 audio.src = playlist[0].url;
             }
@@ -394,13 +417,13 @@
             const song = playlist[index];
             if(!song) return;
 
-            // Update Images
-            document.getElementById('hero-img').src = song.cover;
-            document.getElementById('desktop-mini-cover').src = song.cover;
-            document.getElementById('mobile-mini-cover').src = song.cover;
-            document.getElementById('hero-artist-avatar').src = song.cover;
+            // Images
+            ['hero-img', 'desktop-mini-cover', 'mobile-mini-cover'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.src = song.cover;
+            });
 
-            // Update Text
+            // Text
             ['hero-title', 'desktop-mini-title', 'mobile-mini-title'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el) el.innerText = song.title;
@@ -410,94 +433,62 @@
                 if(el) el.innerText = song.artist;
             });
 
-            // Update Duration Text (Total)
-            // Nếu có duration hardcode thì hiện luôn
-            if(song.duration) {
-                document.getElementById('total-duration').innerText = song.duration;
-            } else {
-                document.getElementById('total-duration').innerText = "--:--";
-            }
-            
-            // Highlight row
-            renderSongList(); 
+            document.getElementById('total-duration').innerText = song.duration || "--:--";
+            renderSongList();
         }
 
         function playSong(index) {
-            if(index !== undefined) currentIndex = index;
+            currentIndex = index;
             const song = playlist[currentIndex];
             if(!song) return;
 
             loadSongUI(currentIndex);
-            
-            // Hiện Mobile Player
             document.getElementById('mobile-player').classList.remove('translate-y-32');
 
-            // Play
             if(audio.src !== song.url) {
                 audio.src = song.url;
                 audio.load();
             }
             
-            audio.play().then(() => {
-                setIsPlaying(true);
-            }).catch(e => {
-                console.error("Play failed", e);
-                setIsPlaying(false);
-            });
+            audio.play().then(() => setPlayState(true))
+                 .catch(e => { console.error(e); setPlayState(false); });
         }
 
         function togglePlay() {
             if(playlist.length === 0) return;
-            // Nếu chưa có src (lần đầu)
-            if(!audio.src) {
-                playSong(currentIndex);
-                return;
-            }
+            if(!audio.src) { playSong(currentIndex); return; }
 
             if(audio.paused) {
-                audio.play().then(() => setIsPlaying(true));
+                audio.play().then(() => setPlayState(true));
             } else {
                 audio.pause();
-                setIsPlaying(false);
+                setPlayState(false);
             }
         }
 
-        function setIsPlaying(state) {
+        function setPlayState(state) {
             isPlaying = state;
-            updatePlayIcons(state ? 'pause' : 'play');
             
-            // Hiệu ứng ảnh quay hoặc zoom nhẹ
-            const heroImg = document.getElementById('hero-img');
-            if(state) {
-                // heroImg.classList.add('scale-105'); 
-            } else {
-                // heroImg.classList.remove('scale-105');
-            }
-        }
-
-        function updatePlayIcons(state) {
-            // State is 'play' (show play button) or 'pause' (show pause button)
-            const showPlay = state === 'play';
-            const showPause = state === 'pause';
-
-            // Helper to toggle visibility classes
-            const toggle = (el, show) => {
-                if(!el) return;
-                if(show) { el.classList.remove('hidden'); el.classList.add('block'); } 
-                else { el.classList.add('hidden'); el.classList.remove('block'); }
+            // Icon Toggles
+            const toggle = (idPlay, idPause) => {
+                document.getElementById(idPlay).classList.toggle('hidden', state);
+                document.getElementById(idPause).classList.toggle('hidden', !state);
             };
+            
+            toggle('hero-icon-play', 'hero-icon-pause');
+            toggle('desktop-icon-play', 'desktop-icon-pause');
+            toggle('mobile-icon-play', 'mobile-icon-pause');
 
-            // Hero
-            toggle(document.querySelector('.hero-icon-play'), showPlay);
-            toggle(document.querySelector('.hero-icon-pause'), showPause);
+            // Animations
+            const visualizer = document.getElementById('hero-visualizer');
+            if(state) visualizer.classList.remove('paused');
+            else visualizer.classList.add('paused');
 
-            // Desktop
-            toggle(document.querySelector('.desktop-icon-play'), showPlay);
-            toggle(document.querySelector('.desktop-icon-pause'), showPause);
+            const mobileDisc = document.getElementById('mobile-mini-cover');
+            if(state) mobileDisc.classList.remove('spin-paused');
+            else mobileDisc.classList.add('spin-paused');
 
-            // Mobile
-            toggle(document.querySelector('.mobile-icon-play'), showPlay);
-            toggle(document.querySelector('.mobile-icon-pause'), showPause);
+            renderSongList(); // Update list equalizer
         }
 
         function nextSong() {
@@ -511,33 +502,20 @@
         }
 
         // --- EVENTS ---
-        function setupEventListeners() {
+        function setupEvents() {
             document.getElementById('next-btn').onclick = nextSong;
             document.getElementById('prev-btn').onclick = prevSong;
-
-            // Time Update
+            audio.addEventListener('ended', nextSong);
+            
+            // Progress
             audio.addEventListener('timeupdate', () => {
                 if(isSeeking) return;
-                const duration = audio.duration || 1; // avoid div by 0
-                const pct = (audio.currentTime / duration) * 100;
+                const pct = (audio.currentTime / (audio.duration || 1)) * 100;
                 
-                // Desktop Bar
                 document.getElementById('progress-bar').value = pct;
                 document.getElementById('progress-fill').style.width = pct + '%';
-                document.getElementById('current-time').innerText = formatTime(audio.currentTime);
-                
-                // Nếu metadata duration chưa load đúng, cập nhật khi chạy
-                if(!isNaN(audio.duration) && audio.duration > 0) {
-                     // document.getElementById('total-duration').innerText = formatTime(audio.duration);
-                }
-
-                // Mobile Bar
                 document.getElementById('mobile-progress-fill').style.width = pct + '%';
-            });
-
-            audio.addEventListener('ended', nextSong);
-            audio.addEventListener('loadedmetadata', () => {
-                document.getElementById('total-duration').innerText = playlist[currentIndex].duration || formatTime(audio.duration);
+                document.getElementById('current-time').innerText = formatTime(audio.currentTime);
             });
 
             // Seek
@@ -550,62 +528,47 @@
             });
             pBar.addEventListener('change', (e) => {
                 isSeeking = false;
-                if(audio.duration) {
-                    audio.currentTime = (e.target.value / 100) * audio.duration;
-                }
+                audio.currentTime = (e.target.value / 100) * audio.duration;
             });
 
             // Volume
-            const vBar = document.getElementById('volume-bar');
-            vBar.addEventListener('input', (e) => {
-                const val = e.target.value;
-                audio.volume = val;
-                document.getElementById('volume-fill').style.width = (val * 100) + '%';
-                lastVolume = val;
-                
-                // Icon change logic could go here
+            document.getElementById('volume-bar').addEventListener('input', (e) => {
+                audio.volume = e.target.value;
+                document.getElementById('volume-fill').style.width = (e.target.value * 100) + '%';
             });
         }
 
-        // --- RENDERERS ---
+        // --- RENDERING ---
         function renderSongList() {
             const list = document.getElementById('song-list');
             list.innerHTML = '';
             
             playlist.forEach((song, i) => {
                 const isActive = i === currentIndex;
-                const activeText = isActive ? 'text-emerald-500 font-bold' : 'text-white';
-                const bgClass = isActive ? 'bg-white/10' : 'hover:bg-white/5';
+                const activeClass = isActive ? 'text-emerald-400' : 'text-white';
+                const bgClass = isActive ? 'bg-white/10 border-white/10' : 'border-transparent hover:bg-white/5';
                 
-                // Animation equalizer if playing
-                const playingAnim = (isActive && isPlaying) 
-                    ? `<div class="flex items-end gap-[2px] h-4 mb-1 ml-1"><div class="eq-bar h-2 w-[3px]"></div><div class="eq-bar h-3 w-[3px]"></div><div class="eq-bar h-1 w-[3px]"></div></div>` 
-                    : `<span class="text-sm text-[#b3b3b3] w-4 text-center group-hover:hidden">${i+1}</span>
-                       <i data-lucide="play" class="w-3 h-3 text-white fill-white hidden group-hover:block"></i>`;
+                // Equalizer GIF/CSS logic
+                const indexOrEq = (isActive && isPlaying) 
+                    ? `<div class="flex items-end gap-[3px] h-3 ml-1">
+                         <div class="w-[3px] bg-emerald-500 animate-[wave_0.6s_infinite] h-full"></div>
+                         <div class="w-[3px] bg-emerald-500 animate-[wave_0.8s_infinite] h-2/3"></div>
+                         <div class="w-[3px] bg-emerald-500 animate-[wave_0.5s_infinite] h-full"></div>
+                       </div>`
+                    : `<span class="group-hover:hidden">${i+1}</span><i data-lucide="play" class="w-3 h-3 hidden group-hover:block ml-0.5"></i>`;
 
                 const html = `
-                    <div onclick="playSong(${i})" class="group grid grid-cols-[auto_1fr_auto] gap-4 items-center p-3 rounded-lg cursor-pointer transition ${bgClass} border border-transparent hover:border-white/5">
-                        
-                        <!-- Col 1: Index / Play Icon -->
-                        <div class="flex items-center justify-center w-8">
-                            ${playingAnim}
-                        </div>
-
-                        <!-- Col 2: Info -->
+                    <div onclick="playSong(${i})" class="group grid grid-cols-[40px_1fr_60px] md:grid-cols-[50px_1fr_100px_80px] items-center px-3 py-2.5 rounded-lg cursor-pointer border ${bgClass} transition">
+                        <div class="text-gray-500 text-center text-xs flex justify-center items-center h-4">${indexOrEq}</div>
                         <div class="flex items-center gap-3 overflow-hidden">
-                            <img src="${song.cover}" class="w-10 h-10 rounded object-cover shadow-sm hidden md:block">
+                            <img src="${song.cover}" class="w-10 h-10 rounded-md object-cover shadow-sm hidden md:block">
                             <div class="flex flex-col min-w-0">
-                                <span class="truncate text-base ${activeText}">${song.title}</span>
-                                <span class="truncate text-xs text-[#b3b3b3] group-hover:text-white transition">${song.artist}</span>
+                                <span class="truncate font-medium ${activeClass}">${song.title}</span>
+                                <span class="truncate text-xs text-gray-500 group-hover:text-gray-300 transition">${song.artist}</span>
                             </div>
                         </div>
-
-                        <!-- Col 3: Duration / Heart -->
-                        <div class="flex items-center justify-end gap-3 min-w-[60px]">
-                            <button class="text-[#b3b3b3] hover:text-emerald-500 opacity-0 group-hover:opacity-100 transition hidden md:block"><i data-lucide="heart" class="w-4 h-4"></i></button>
-                            <span class="text-sm text-[#b3b3b3] font-mono">${song.duration || "--:--"}</span>
-                            <button class="text-[#b3b3b3] md:hidden"><i data-lucide="more-vertical" class="w-4 h-4"></i></button>
-                        </div>
+                        <div class="hidden md:block text-xs text-gray-500 text-right">${song.views || '---'}</div>
+                        <div class="text-xs text-gray-500 font-mono text-right">${song.duration || "--:--"}</div>
                     </div>
                 `;
                 list.insertAdjacentHTML('beforeend', html);
@@ -618,17 +581,14 @@
             list.innerHTML = '';
             allSongs.forEach((song, i) => {
                 const html = `
-                    <div class="flex items-center justify-between bg-[#2a2a2a] p-3 rounded-lg border border-white/5 hover:border-emerald-500/30 transition group">
-                        <div class="flex items-center gap-3 overflow-hidden">
+                    <div class="flex items-center justify-between bg-black/40 p-2 rounded-lg border border-white/5">
+                        <div class="flex items-center gap-2 overflow-hidden">
                             <img src="${song.cover}" class="w-8 h-8 rounded object-cover">
-                            <div class="flex flex-col min-w-0 pr-2">
-                                <span class="truncate text-white text-sm font-medium">${song.title}</span>
-                                <span class="text-[10px] text-gray-400">${song.duration || 'N/A'}</span>
-                            </div>
+                            <div class="truncate text-xs text-white max-w-[150px]">${song.title}</div>
                         </div>
-                        <div class="flex gap-1">
-                            <button onclick="toggleVisibility(${i})" class="p-2 rounded-full hover:bg-white/10 ${song.isHidden ? 'text-gray-600' : 'text-emerald-400'}"><i data-lucide="${song.isHidden ? 'eye-off' : 'eye'}" class="w-4 h-4"></i></button>
-                            <button onclick="deleteSong(${i})" class="p-2 rounded-full hover:bg-red-500/20 text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        <div class="flex gap-2">
+                            <button onclick="toggleVisibility(${i})" class="${song.isHidden ? 'text-gray-500' : 'text-emerald-500'}"><i data-lucide="${song.isHidden ? 'eye-off' : 'eye'}" class="w-4 h-4"></i></button>
+                            <button onclick="deleteSong(${i})" class="text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         </div>
                     </div>
                 `;
@@ -637,72 +597,39 @@
             if(window.lucide) lucide.createIcons();
         }
 
-        // --- HELPERS ---
+        // --- UTILS & ADMIN ---
         function formatTime(s) {
             if(isNaN(s)) return "0:00";
             const m = Math.floor(s/60);
             const sec = Math.floor(s%60);
             return `${m}:${sec<10?'0'+sec:sec}`;
         }
-        
         function openAdminModal() { document.getElementById('admin-modal').classList.remove('hidden'); renderAdminList(); }
         function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); }
         
         function addNewSong() {
             const title = document.getElementById('input-title').value;
             const url = document.getElementById('input-url').value;
-            const duration = document.getElementById('input-duration').value; // Get duration input
-            
-            if(!title || !url) return alert("Vui lòng nhập Tên và Link nhạc!");
+            if(!title || !url) return alert("Thiếu tên hoặc link!");
             
             allSongs.push({
                 id: Date.now(),
-                title, 
-                artist: document.getElementById('input-artist').value || "Unknown",
-                cover: document.getElementById('input-cover').value || "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop",
-                url,
-                duration: duration || "--:--",
-                isHidden: false
+                title, artist: document.getElementById('input-artist').value || "Unknown",
+                cover: document.getElementById('input-cover').value || "https://images.unsplash.com/photo-1470225620780-dba8ba36b745",
+                url, duration: document.getElementById('input-duration').value || "--:--",
+                views: "New", isHidden: false
             });
-            
-            // Save & Clear
             saveAndReload();
             closeAdminModal();
-            ['input-title', 'input-artist', 'input-url', 'input-cover', 'input-duration'].forEach(id => document.getElementById(id).value = '');
+            ['input-title','input-url','input-artist','input-cover','input-duration'].forEach(id=>document.getElementById(id).value='');
         }
-
         function toggleVisibility(i) { allSongs[i].isHidden = !allSongs[i].isHidden; saveAndReload(); }
-        function deleteSong(i) { if(confirm("Xóa bài này khỏi danh sách?")) { allSongs.splice(i,1); saveAndReload(); } }
-        
-        function resetDefaultSongs() { 
-            if(confirm("Khôi phục danh sách gốc? Mọi bài hát bạn thêm sẽ bị mất.")) { 
-                allSongs = [...defaultSongs]; 
-                localStorage.removeItem(STORAGE_KEY);
-                location.reload(); 
-            } 
-        }
+        function deleteSong(i) { if(confirm("Xóa?")) { allSongs.splice(i,1); saveAndReload(); } }
+        function resetDefaultSongs() { if(confirm("Reset gốc?")) { localStorage.removeItem(STORAGE_KEY); location.reload(); } }
+        function saveAndReload() { localStorage.setItem(STORAGE_KEY, JSON.stringify(allSongs)); updatePlaylist(); }
+        function toggleMute() { audio.muted = !audio.muted; }
 
-        function saveAndReload() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(allSongs));
-            updatePlaylist();
-        }
-
-        function toggleMute() {
-            if(audio.volume > 0) {
-                lastVolume = audio.volume;
-                audio.volume = 0;
-                document.getElementById('volume-bar').value = 0;
-                document.getElementById('volume-fill').style.width = '0%';
-            } else {
-                audio.volume = lastVolume;
-                document.getElementById('volume-bar').value = lastVolume;
-                document.getElementById('volume-fill').style.width = (lastVolume * 100) + '%';
-            }
-        }
-
-        // Init
         window.onload = init;
-
     </script>
 </body>
 </html>
