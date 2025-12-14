@@ -2,130 +2,169 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Zingify - Web Nghe Nhạc</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Zingify - Spotify Style</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
-        /* CSS cho thanh trượt mượt mà trên mobile */
+        /* CSS Reset & Spotify Colors */
+        :root {
+            --spotify-green: #1ed760;
+            --spotify-black: #000000;
+            --spotify-dark-gray: #121212;
+            --spotify-light-gray: #b3b3b3;
+        }
+
+        body {
+            background-color: var(--spotify-black);
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Custom Range Slider (Thanh trượt mượt mà) */
         input[type=range] {
             -webkit-appearance: none;
             background: transparent;
+            height: 4px;
+            border-radius: 2px;
+            cursor: pointer;
         }
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            height: 14px; /* To hơn xíu cho dễ bấm trên đt */
-            width: 14px;
+            height: 12px;
+            width: 12px;
             border-radius: 50%;
-            background: #ffffff;
-            cursor: pointer;
-            margin-top: -5px;
-            box-shadow: 0 0 4px rgba(0,0,0,0.5);
+            background: white;
+            margin-top: -4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+        input[type=range]:active::-webkit-slider-thumb {
+            transform: scale(1.3);
         }
         input[type=range]::-webkit-slider-runnable-track {
             width: 100%;
             height: 4px;
-            cursor: pointer;
-            background: #52525b;
+            background: rgba(255,255,255,0.3);
             border-radius: 2px;
         }
+
+        /* Utilities */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         
-        /* Hiệu ứng đĩa quay khi phát nhạc */
-        .spinning {
-            animation: spin 10s linear infinite;
-        }
-        @keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
+        /* Animation quay đĩa */
+        .spinning { animation: spin 10s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Mobile specific padding for bottom nav */
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
-<body class="bg-black text-white font-sans h-screen flex flex-col overflow-hidden select-none">
+<body class="h-screen flex flex-col overflow-hidden select-none">
 
-    <!-- OVERLAY KÍCH HOẠT IOS (BẮT BUỘC) -->
-    <div id="ios-unlock-overlay" class="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center p-6 text-center transition-opacity duration-500" style="display: flex;">
-        <i data-lucide="music" class="w-16 h-16 text-emerald-500 mb-4 animate-bounce"></i>
-        <h2 class="text-2xl font-bold mb-2">Chạm để bắt đầu</h2>
-        <p class="text-zinc-400 mb-6">iOS yêu cầu bạn chạm vào màn hình lần đầu để kích hoạt âm thanh.</p>
-        <button id="unlock-btn" class="bg-emerald-500 text-black font-bold py-3 px-8 rounded-full text-lg shadow-lg hover:bg-emerald-400 hover:scale-105 transition">
-            Vào Nghe Nhạc
+    <!-- IOS UNLOCK OVERLAY (Bắt buộc cho iPhone) -->
+    <div id="ios-unlock-overlay" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-6 text-center transition-opacity duration-500">
+        <div class="w-20 h-20 bg-[#1ed760] rounded-full flex items-center justify-center mb-6 animate-pulse">
+            <i data-lucide="music" class="w-10 h-10 text-black fill-black"></i>
+        </div>
+        <h2 class="text-2xl font-bold mb-2">Chào mừng đến Zingify</h2>
+        <p class="text-gray-400 mb-8 max-w-xs">Chạm vào màn hình để kích hoạt hệ thống âm thanh chất lượng cao.</p>
+        <button id="unlock-btn" class="bg-white text-black font-bold py-3 px-10 rounded-full text-lg shadow hover:scale-105 transition">
+            Bắt đầu nghe
         </button>
     </div>
 
-    <!-- Audio Player -->
+    <!-- AUDIO ENGINE -->
     <audio id="audio-player" preload="auto" playsinline webkit-playsinline></audio>
 
-    <div class="flex flex-1 overflow-hidden">
+    <div class="flex flex-1 overflow-hidden relative">
         
-        <!-- Sidebar -->
-        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-black transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 border-r border-zinc-800 flex flex-col">
-            <div class="p-6 flex-1">
-                <div class="flex items-center gap-2 mb-8 text-emerald-500 font-bold text-2xl">
-                    <i data-lucide="monitor-speaker" class="w-8 h-8"></i>
-                    <span>Zingify</span>
+        <!-- DESKTOP SIDEBAR (Ẩn trên mobile) -->
+        <aside class="hidden md:flex w-64 bg-black flex-col gap-2 p-2">
+            <div class="bg-[#121212] rounded-lg p-4 flex flex-col gap-4">
+                <div class="flex items-center gap-2 text-white font-bold px-2">
+                    <i data-lucide="music-2" class="w-6 h-6"></i> <span>Zingify</span>
                 </div>
-                
-                <nav class="space-y-4">
-                    <div onclick="showHome()" class="flex items-center gap-4 px-4 py-3 rounded-md cursor-pointer bg-zinc-800 text-white font-medium hover:bg-zinc-700 transition">
-                        <i data-lucide="home"></i> <span>Trang chủ</span>
-                    </div>
-                    <div class="flex items-center gap-4 px-4 py-3 rounded-md cursor-pointer text-zinc-400 hover:text-white hover:bg-zinc-900 transition font-medium">
-                        <i data-lucide="search"></i> <span>Tìm kiếm</span>
-                    </div>
-                    <div class="flex items-center gap-4 px-4 py-3 rounded-md cursor-pointer text-zinc-400 hover:text-white hover:bg-zinc-900 transition font-medium">
-                        <i data-lucide="library"></i> <span>Thư viện</span>
-                    </div>
-                    <div onclick="openAdminModal()" class="flex items-center gap-4 px-4 py-3 rounded-md cursor-pointer text-red-400 hover:text-red-300 hover:bg-zinc-900 transition font-medium border border-zinc-800 mt-4">
-                        <i data-lucide="shield-alert"></i> <span>Admin / Quản lý</span>
-                    </div>
+                <nav class="space-y-1">
+                    <a href="#" class="flex items-center gap-4 px-4 py-3 rounded text-white bg-white/10 font-bold transition">
+                        <i data-lucide="home"></i> Trang chủ
+                    </a>
+                    <a href="#" class="flex items-center gap-4 px-4 py-3 rounded text-[#b3b3b3] hover:text-white font-bold transition">
+                        <i data-lucide="search"></i> Tìm kiếm
+                    </a>
                 </nav>
             </div>
-            
-            <button id="close-sidebar" class="absolute top-4 right-4 md:hidden text-zinc-400 p-2">
-                <i data-lucide="x"></i>
-            </button>
+            <div class="bg-[#121212] rounded-lg flex-1 p-4">
+                <div class="flex items-center justify-between text-[#b3b3b3] px-2 mb-4">
+                    <div class="flex items-center gap-2 font-bold hover:text-white cursor-pointer">
+                        <i data-lucide="library"></i> Thư viện
+                    </div>
+                    <button onclick="openAdminModal()" class="hover:text-white"><i data-lucide="plus"></i></button>
+                </div>
+                <div class="h-full overflow-y-auto no-scrollbar">
+                    <!-- Playlist Sidebar Items -->
+                    <div class="bg-[#2a2a2a] p-4 rounded-md mb-2">
+                        <p class="font-bold text-white mb-1">Tạo danh sách phát</p>
+                        <p class="text-sm text-gray-400 mb-3">Rất dễ, chúng tôi sẽ giúp bạn</p>
+                        <button onclick="openAdminModal()" class="bg-white text-black text-sm font-bold px-4 py-1.5 rounded-full hover:scale-105 transition">Tạo playlist</button>
+                    </div>
+                </div>
+            </div>
         </aside>
 
-        <!-- Main Content -->
-        <main class="flex-1 bg-gradient-to-b from-zinc-800 to-black overflow-y-auto no-scrollbar relative">
-            <header class="md:hidden flex items-center justify-between p-4 sticky top-0 bg-black/80 backdrop-blur-md z-40">
-                <button id="open-sidebar" class="p-2">
-                    <i data-lucide="menu"></i>
-                </button>
-                <span class="font-bold">Zingify</span>
-                <div class="w-6"></div>
-            </header>
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 bg-[#121212] md:rounded-lg md:my-2 md:mr-2 overflow-y-auto no-scrollbar relative w-full">
+            
+            <!-- Header Background Gradient -->
+            <div class="absolute inset-0 h-64 bg-gradient-to-b from-emerald-900/80 via-[#121212] to-[#121212] pointer-events-none"></div>
 
-            <div class="p-6 md:p-8 pb-40"> <!-- Tăng padding bottom để không bị che bởi player -->
-                <!-- Hero Section -->
-                <div class="flex flex-col md:flex-row gap-6 items-center md:items-end mb-8 transition-all duration-300 text-center md:text-left" id="hero-section">
-                    <div class="relative group">
-                         <img id="hero-img" src="" alt="Album Art" class="w-48 h-48 md:w-60 md:h-60 shadow-2xl shadow-black rounded-full md:rounded-md object-cover bg-zinc-800 border-2 border-zinc-700">
+            <!-- Mobile Header -->
+            <div class="sticky top-0 z-40 flex items-center justify-between p-4 md:hidden bg-gradient-to-b from-black/60 to-transparent backdrop-blur-sm">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-[#1ed760] rounded-full flex items-center justify-center text-black font-bold">Z</div>
+                    <span class="font-bold text-lg">Zingify</span>
+                </div>
+                <button onclick="openAdminModal()" class="p-2 text-white"><i data-lucide="settings"></i></button>
+            </div>
+
+            <div class="relative z-10 px-4 pb-32 md:p-8"> <!-- pb-32 để tránh bị player che mất nội dung cuối -->
+                
+                <!-- Hero Section (Now playing info) -->
+                <div class="flex flex-col md:flex-row gap-6 items-center md:items-end mb-8 mt-4 md:mt-0 transition-all duration-300">
+                    <div class="relative group shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
+                         <img id="hero-img" src="" class="w-48 h-48 md:w-52 md:h-52 object-cover bg-[#282828] transition-all duration-500 rounded-md md:rounded shadow-lg">
                     </div>
-                   
-                    <div class="flex flex-col gap-2 items-center md:items-start">
-                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-500">Đang phát</span>
-                        <h1 id="hero-title" class="text-2xl md:text-5xl font-black mb-2 leading-tight line-clamp-2">...</h1>
-                        <div class="flex items-center text-zinc-300 text-sm font-medium flex-wrap justify-center md:justify-start">
-                            <span id="hero-artist" class="text-white hover:underline cursor-pointer">...</span>
-                            <span class="mx-2 hidden md:inline">•</span>
-                            <span id="hero-duration" class="hidden md:inline">0:00</span>
+                    
+                    <div class="flex flex-col gap-1 items-center md:items-start text-center md:text-left flex-1">
+                        <span class="text-xs font-bold uppercase tracking-wider text-white hidden md:block">Playlist</span>
+                        <h1 id="hero-title" class="text-2xl md:text-6xl font-black mb-1 leading-tight line-clamp-2 mt-4 md:mt-0">...</h1>
+                        <div class="flex items-center text-gray-300 text-sm font-medium">
+                            <span id="hero-artist" class="text-white font-bold hover:underline cursor-pointer text-base">...</span>
+                            <span class="mx-2">•</span>
+                            <span class="hidden md:inline text-gray-400">Danh sách phát của bạn</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Action Bar -->
-                <div class="flex items-center justify-center md:justify-start gap-6 mb-8">
-                    <button id="hero-play-btn" class="w-14 h-14 bg-emerald-500 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 hover:bg-emerald-400 transition shadow-lg text-black">
-                        <i data-lucide="play" class="fill-black ml-1"></i>
+                <div class="flex items-center justify-between md:justify-start gap-8 mb-6">
+                    <button id="hero-play-btn" class="w-14 h-14 bg-[#1ed760] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition shadow-lg text-black">
+                        <i data-lucide="play" class="fill-black ml-1 w-6 h-6"></i>
                     </button>
+                    <button class="text-[#b3b3b3] hover:text-white"><i data-lucide="heart" class="w-8 h-8"></i></button>
+                    <button class="text-[#b3b3b3] hover:text-white md:hidden"><i data-lucide="more-horizontal" class="w-8 h-8"></i></button>
                 </div>
 
                 <!-- Song List -->
                 <div>
-                    <h2 class="text-xl md:text-2xl font-bold mb-4">Gợi ý cho bạn</h2>
-                    <div id="song-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <h2 class="text-xl font-bold mb-4 text-white">Gợi ý cho bạn</h2>
+                    <div id="song-list" class="flex flex-col gap-0.5">
                         <!-- JS renders here -->
                     </div>
                 </div>
@@ -133,524 +172,388 @@
         </main>
     </div>
 
-    <!-- ADMIN MODAL -->
-    <div id="admin-modal" class="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-zinc-900 w-full max-w-3xl rounded-xl shadow-2xl border border-zinc-700 max-h-[85vh] overflow-y-auto flex flex-col">
-            <div class="flex items-center justify-between p-4 md:p-6 border-b border-zinc-800 sticky top-0 bg-zinc-900 z-10">
-                <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i data-lucide="settings" class="text-emerald-500"></i> Quản Lý
-                </h2>
-                <button onclick="closeAdminModal()" class="text-zinc-400 hover:text-white p-2">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
+    <!-- MOBILE FLOATING PLAYER (Chỉ hiện trên mobile) -->
+    <div id="mobile-player" class="md:hidden fixed bottom-[60px] left-2 right-2 bg-[#262626] rounded-lg p-2 flex items-center gap-3 shadow-xl z-50 border-b border-white/5 transition-transform duration-300 translate-y-24">
+        <img id="mobile-mini-cover" src="" class="w-10 h-10 rounded bg-zinc-800 object-cover flex-shrink-0">
+        <div class="flex-1 min-w-0 flex flex-col justify-center" onclick="expandPlayer()">
+            <h4 id="mobile-mini-title" class="text-sm font-bold text-white truncate leading-tight">...</h4>
+            <p id="mobile-mini-artist" class="text-xs text-gray-400 truncate">...</p>
+        </div>
+        <div class="flex items-center gap-3 pr-2">
+            <button class="text-white" onclick="togglePlay()"><i id="mobile-play-icon" data-lucide="play" class="fill-white w-6 h-6"></i></button>
+        </div>
+        <!-- Thanh tiến trình nhỏ xíu -->
+        <div class="absolute bottom-0 left-1 right-1 h-[2px] bg-gray-600 rounded-full overflow-hidden">
+            <div id="mobile-progress-fill" class="h-full bg-white w-0"></div>
+        </div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION (Mobile Only) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-gradient-to-t from-black to-black/95 h-[56px] border-t border-white/10 flex justify-around items-center z-50 safe-bottom">
+        <div class="flex flex-col items-center justify-center w-full h-full text-white cursor-pointer">
+            <i data-lucide="home" class="w-6 h-6 mb-0.5"></i>
+            <span class="text-[10px] font-medium">Trang chủ</span>
+        </div>
+        <div class="flex flex-col items-center justify-center w-full h-full text-[#b3b3b3] cursor-pointer hover:text-white">
+            <i data-lucide="search" class="w-6 h-6 mb-0.5"></i>
+            <span class="text-[10px] font-medium">Tìm kiếm</span>
+        </div>
+        <div class="flex flex-col items-center justify-center w-full h-full text-[#b3b3b3] cursor-pointer hover:text-white">
+            <i data-lucide="library" class="w-6 h-6 mb-0.5"></i>
+            <span class="text-[10px] font-medium">Thư viện</span>
+        </div>
+    </nav>
+
+    <!-- DESKTOP PLAYER BAR (Fixed Bottom) -->
+    <div class="hidden md:grid fixed bottom-0 left-0 right-0 h-[90px] bg-[#181818] border-t border-[#282828] px-4 grid-cols-3 items-center z-50">
+        <!-- Left: Info -->
+        <div class="flex items-center gap-4">
+            <img id="desktop-mini-cover" src="" class="w-14 h-14 rounded bg-zinc-800 object-cover shadow-md">
+            <div class="flex flex-col justify-center">
+                <h4 id="desktop-mini-title" class="text-sm font-semibold text-white hover:underline cursor-pointer line-clamp-1">...</h4>
+                <span id="desktop-mini-artist" class="text-xs text-[#b3b3b3] hover:underline cursor-pointer hover:text-white line-clamp-1">...</span>
             </div>
+            <button class="text-[#b3b3b3] hover:text-white ml-2"><i data-lucide="heart" class="w-4 h-4"></i></button>
+        </div>
 
-            <div class="p-4 md:p-6 space-y-6">
-                <!-- CẢNH BÁO LOCAL STORAGE -->
-                <div class="bg-blue-900/20 border border-blue-600/30 p-4 rounded-lg flex items-start gap-3">
-                    <i data-lucide="info" class="text-blue-500 flex-shrink-0 mt-1 w-5 h-5"></i>
-                    <div class="text-xs md:text-sm text-blue-200">
-                        <strong>Lưu ý GitHub:</strong><br>
-                        Sửa code phần <code>defaultSongs</code> để cập nhật nhạc cho tất cả mọi người. Nhập ở đây chỉ lưu trên máy bạn.
-                    </div>
+        <!-- Center: Controls -->
+        <div class="flex flex-col items-center w-full max-w-[500px] mx-auto">
+            <div class="flex items-center gap-6 mb-2">
+                <button class="text-[#b3b3b3] hover:text-white"><i data-lucide="shuffle" class="w-4 h-4"></i></button>
+                <button id="prev-btn" class="text-[#b3b3b3] hover:text-white transition"><i data-lucide="skip-back" class="w-5 h-5 fill-current"></i></button>
+                <button id="play-pause-desktop" class="bg-white rounded-full p-2 hover:scale-105 active:scale-95 transition flex items-center justify-center w-8 h-8">
+                    <i data-lucide="play" class="w-4 h-4 text-black fill-black ml-0.5"></i>
+                </button>
+                <button id="next-btn" class="text-[#b3b3b3] hover:text-white transition"><i data-lucide="skip-forward" class="w-5 h-5 fill-current"></i></button>
+                <button class="text-[#b3b3b3] hover:text-white"><i data-lucide="repeat" class="w-4 h-4"></i></button>
+            </div>
+            
+            <div class="flex items-center gap-2 w-full text-xs font-mono text-[#b3b3b3]">
+                <span id="current-time" class="min-w-[40px] text-right">0:00</span>
+                <div class="relative flex-1 h-1 bg-[#4d4d4d] rounded-full group cursor-pointer">
+                    <div id="progress-fill" class="absolute top-0 left-0 h-full bg-white rounded-full group-hover:bg-[#1ed760] w-0"></div>
+                    <input id="progress-bar" type="range" min="0" max="100" value="0" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                 </div>
+                <span id="total-duration" class="min-w-[40px]">0:00</span>
+            </div>
+        </div>
 
-                <!-- Form Thêm -->
-                <div class="bg-zinc-800/30 p-4 rounded-lg border border-zinc-700/50">
-                    <h3 class="text-base font-semibold mb-3 text-emerald-400">Thêm Bài Hát Mới</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <input type="text" id="input-title" class="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" placeholder="Tên bài hát...">
-                        <input type="text" id="input-artist" class="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" placeholder="Ca sĩ...">
-                        <input type="text" id="input-cover" class="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" placeholder="Link ảnh...">
-                        <input type="text" id="input-url" class="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" placeholder="Link MP3...">
-                    </div>
-                    <div class="flex gap-2 mt-4">
-                        <button onclick="addNewSong()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded transition flex items-center justify-center gap-2 text-sm">
-                            <i data-lucide="plus" class="w-4 h-4"></i> Thêm
-                        </button>
-                        <button onclick="resetDefaultSongs()" class="px-4 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 font-medium rounded transition text-sm border border-zinc-600" title="Khôi phục gốc">
-                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Danh sách Admin -->
-                <div>
-                    <h3 class="text-lg font-semibold text-white mb-3">Danh Sách</h3>
-                    <div class="bg-zinc-800 rounded-lg overflow-hidden border border-zinc-700">
-                        <div class="max-h-60 overflow-y-auto">
-                            <table class="w-full text-left text-sm text-zinc-400">
-                                <thead class="bg-zinc-900 text-xs uppercase font-medium text-zinc-500 sticky top-0">
-                                    <tr>
-                                        <th class="px-4 py-3">Bài Hát</th>
-                                        <th class="px-2 py-3 text-center w-14">Ẩn</th>
-                                        <th class="px-2 py-3 text-center w-14">Xóa</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="admin-song-list" class="divide-y divide-zinc-700">
-                                    <!-- Render by JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+        <!-- Right: Volume -->
+        <div class="flex items-center justify-end gap-3 w-full">
+            <i data-lucide="mic-2" class="w-4 h-4 text-[#b3b3b3]"></i>
+            <i data-lucide="layers" class="w-4 h-4 text-[#b3b3b3]"></i>
+            <div class="flex items-center gap-2 w-32 group">
+                <i data-lucide="volume-2" class="w-5 h-5 text-[#b3b3b3]"></i>
+                <div class="relative flex-1 h-1 bg-[#4d4d4d] rounded-full">
+                     <div id="volume-fill" class="absolute top-0 left-0 h-full bg-white group-hover:bg-[#1ed760] rounded-full w-full"></div>
+                     <input id="volume-bar" type="range" min="0" max="1" step="0.01" value="1" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Player Bar -->
-    <div class="fixed bottom-0 left-0 right-0 h-24 bg-zinc-900/95 backdrop-blur-lg border-t border-zinc-800 px-4 grid grid-cols-[1fr_auto_1fr] md:grid-cols-3 items-center z-50 pb-safe">
-        <!-- Left: Info -->
-        <div class="flex items-center gap-3 overflow-hidden pr-2">
-            <img id="mini-cover" src="" class="w-12 h-12 rounded object-cover hidden sm:block shadow-lg bg-zinc-800 border border-zinc-700">
-            <div class="flex flex-col justify-center overflow-hidden">
-                <div class="flex items-center gap-2">
-                    <h4 id="mini-title" class="text-sm font-semibold text-white truncate max-w-[120px] md:max-w-[180px]">...</h4>
+    <!-- ADMIN MODAL (Giữ nguyên tính năng, style lại cho đẹp) -->
+    <div id="admin-modal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-[#282828] w-full max-w-lg rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="flex items-center justify-between p-4 border-b border-white/10">
+                <h2 class="font-bold text-white text-lg">Quản lý bài hát</h2>
+                <button onclick="closeAdminModal()" class="text-gray-400 hover:text-white"><i data-lucide="x"></i></button>
+            </div>
+            <div class="p-4 overflow-y-auto space-y-4">
+                <div class="grid grid-cols-1 gap-3">
+                    <input type="text" id="input-title" class="bg-[#3e3e3e] border-none rounded p-3 text-white text-sm placeholder-gray-400 focus:ring-1 focus:ring-white outline-none" placeholder="Tên bài hát">
+                    <input type="text" id="input-artist" class="bg-[#3e3e3e] border-none rounded p-3 text-white text-sm placeholder-gray-400 focus:ring-1 focus:ring-white outline-none" placeholder="Ca sĩ">
+                    <input type="text" id="input-cover" class="bg-[#3e3e3e] border-none rounded p-3 text-white text-sm placeholder-gray-400 focus:ring-1 focus:ring-white outline-none" placeholder="Link ảnh bìa">
+                    <input type="text" id="input-url" class="bg-[#3e3e3e] border-none rounded p-3 text-white text-sm placeholder-gray-400 focus:ring-1 focus:ring-white outline-none" placeholder="Link MP3">
                 </div>
-                <span id="mini-artist" class="text-xs text-zinc-400 truncate">...</span>
-            </div>
-        </div>
-
-        <!-- Center: Controls -->
-        <div class="flex flex-col items-center w-full max-w-[400px]">
-            <div class="flex items-center gap-6 mb-1">
-                <button id="prev-btn" class="text-zinc-400 hover:text-white transition p-2"><i data-lucide="skip-back" class="w-5 h-5 fill-current"></i></button>
-                
-                <button id="play-pause-btn" class="bg-white rounded-full p-2 text-black hover:scale-105 active:scale-95 transition w-9 h-9 flex items-center justify-center">
-                    <i data-lucide="play" class="w-4 h-4 fill-black ml-0.5"></i>
-                </button>
-                
-                <button id="next-btn" class="text-zinc-400 hover:text-white transition p-2"><i data-lucide="skip-forward" class="w-5 h-5 fill-current"></i></button>
-            </div>
-            
-            <div class="flex items-center gap-2 w-full px-2">
-                <span id="current-time" class="text-[10px] text-zinc-400 w-8 text-right font-mono">0:00</span>
-                <div class="relative flex-1 h-4 flex items-center group">
-                    <input id="progress-bar" type="range" min="0" max="100" value="0" class="absolute z-10 w-full h-1 opacity-0 cursor-pointer group-hover:opacity-100 h-full">
-                    <div class="w-full h-1 bg-zinc-600 rounded-full overflow-hidden">
-                        <div id="progress-fill" class="h-full bg-white w-0 rounded-full"></div>
-                    </div>
+                <div class="flex gap-2">
+                    <button onclick="addNewSong()" class="flex-1 bg-white text-black font-bold py-3 rounded-full hover:scale-105 transition">Thêm bài hát</button>
+                    <button onclick="resetDefaultSongs()" class="px-4 bg-[#3e3e3e] text-white rounded-full font-bold"><i data-lucide="rotate-ccw" class="w-5 h-5"></i></button>
                 </div>
-                <span id="total-duration" class="text-[10px] text-zinc-400 w-8 font-mono">0:00</span>
-            </div>
-        </div>
-
-        <!-- Right: Volume (Hidden on small mobile) -->
-        <div class="hidden md:flex items-center justify-end gap-2">
-            <button id="mute-btn" class="text-zinc-400 hover:text-white"><i data-lucide="volume-2" class="w-4 h-4"></i></button>
-            <div class="w-24 h-1 bg-zinc-600 rounded-full relative">
-                 <input id="volume-bar" type="range" min="0" max="1" step="0.01" value="1" class="absolute w-full h-full opacity-0 cursor-pointer z-10">
-                 <div id="volume-fill" class="h-full bg-white w-[80%] rounded-full absolute top-0 left-0 pointer-events-none"></div>
+                <div class="border-t border-white/10 pt-4">
+                    <h3 class="font-bold mb-2 text-sm text-gray-300">Danh sách hiện tại</h3>
+                    <div id="admin-song-list" class="space-y-2"></div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 1. DỮ LIỆU ---
-        
+        // --- DATA & STATE ---
         const defaultSongs = [
-            {
-                id: 1,
-                title: "Christmas",
-                artist: "DoThy",
-                cover: "https://i.imgur.com/tWzvF8A.jpeg",
-                url: "https://github.com/iamsonnk4/upanhvn/raw/refs/heads/main/is%20there%20someone%20else_%20-%20the%20weeknd%20%20slowed%20%20reverb.mp3",
-                isHidden: false
-            },
-            {
-                id: 2,
-                title: "Nhạc Demo 2",
-                artist: "SoundHelix",
-                cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop",
-                url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-                isHidden: false
-            }
+            { id: 1, title: "Is There Someone Else?", artist: "The Weeknd", cover: "https://i.scdn.co/image/ab67616d0000b2734444985223c9155734d0b16f", url: "https://github.com/iamsonnk4/upanhvn/raw/refs/heads/main/is%20there%20someone%20else_%20-%20the%20weeknd%20%20slowed%20%20reverb.mp3", isHidden: false },
+            { id: 2, title: "Die With A Smile", artist: "Lady Gaga, Bruno Mars", cover: "https://i.scdn.co/image/ab67616d0000b27382ea2e9e1858aa012c57cd45", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", isHidden: false }, // Demo link replaced
+            { id: 3, title: "Starboy", artist: "The Weeknd, Daft Punk", cover: "https://i.scdn.co/image/ab67616d0000b2734718e28d24527d9c1523674d", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", isHidden: false }
         ];
 
-        const STORAGE_KEY = 'zingify_songs_github_v3_ios_strict'; 
+        const STORAGE_KEY = 'spotify_clone_v1';
         let allSongs = [];
-        let playlist = []; 
+        let playlist = [];
         let currentIndex = 0;
         let isPlaying = false;
-        let isSeeking = false; 
+        let isSeeking = false;
 
-        // DOM Elements
+        // --- DOM ELEMENTS ---
         const audio = document.getElementById('audio-player');
-        const playPauseBtn = document.getElementById('play-pause-btn');
-        const heroPlayBtn = document.getElementById('hero-play-btn');
-        const progressBar = document.getElementById('progress-bar');
-        const progressFill = document.getElementById('progress-fill');
-        const currentTimeEl = document.getElementById('current-time');
-        const totalDurationEl = document.getElementById('total-duration');
-        const volumeBar = document.getElementById('volume-bar');
-        const volumeFill = document.getElementById('volume-fill');
-        const heroImg = document.getElementById('hero-img');
-        const unlockOverlay = document.getElementById('ios-unlock-overlay');
-
-        // --- 2. HỆ THỐNG (INIT) ---
-
+        
+        // --- INIT ---
         function init() {
-            loadData();
-            updatePlaylist();
-            
-            // Hiện overlay bắt buộc user click để unlock Audio Context
-            document.getElementById('unlock-btn').addEventListener('click', () => {
-                unlockAudio();
-                unlockOverlay.style.opacity = '0';
-                setTimeout(() => {
-                    unlockOverlay.style.display = 'none';
-                }, 500);
-            });
-
-            if (playlist.length > 0) {
-                renderCurrentSongInfo(0);
-            } else {
-                showEmptyState();
-            }
-            
-            if(window.lucide) lucide.createIcons();
-        }
-
-        // HÀM QUAN TRỌNG: Mở khóa âm thanh
-        function unlockAudio() {
-            // Phát một âm thanh rỗng ngay lập tức khi user click
-            if (audio) {
-                audio.play().then(() => {
-                    // Ngay sau khi play thành công âm thanh rỗng, pause lại ngay
-                    audio.pause();
-                    audio.currentTime = 0;
-                    console.log("Audio Unlocked successfully!");
-                }).catch((e) => {
-                    console.log("Unlock failed (will try again on next click):", e);
-                });
-            }
-        }
-
-        function loadData() {
             try {
                 const data = localStorage.getItem(STORAGE_KEY);
                 allSongs = data ? JSON.parse(data) : [...defaultSongs];
-            } catch (e) {
-                console.log(e);
-                allSongs = [...defaultSongs];
-            }
-        }
+            } catch(e) { allSongs = [...defaultSongs]; }
+            
+            updatePlaylist();
+            setupEventListeners();
+            
+            // iOS Unlock Handler
+            document.getElementById('unlock-btn').addEventListener('click', () => {
+                audio.play().then(() => {
+                    audio.pause(); 
+                    audio.currentTime = 0;
+                    document.getElementById('ios-unlock-overlay').style.opacity = '0';
+                    setTimeout(() => document.getElementById('ios-unlock-overlay').style.display = 'none', 500);
+                }).catch(e => console.log("Unlock failed", e));
+            });
 
-        function saveData() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(allSongs));
+            if(playlist.length > 0) loadSongUI(0);
+            if(window.lucide) lucide.createIcons();
         }
 
         function updatePlaylist() {
-            playlist = allSongs.filter(song => !song.isHidden);
-            if (currentIndex >= playlist.length) currentIndex = 0;
+            playlist = allSongs.filter(s => !s.isHidden);
+            if(currentIndex >= playlist.length) currentIndex = 0;
             renderSongList();
+            renderAdminList();
         }
 
-        // --- 3. LOGIC PHÁT NHẠC (ĐÃ SỬA CHO IOS) ---
-
-        function renderCurrentSongInfo(index) {
-            if(playlist.length === 0) return;
+        // --- CORE PLAYER LOGIC ---
+        function loadSongUI(index) {
             const song = playlist[index];
+            if(!song) return;
 
-            heroImg.src = song.cover || "https://via.placeholder.com/300";
-            document.getElementById('mini-cover').src = song.cover || "https://via.placeholder.com/100";
-            document.getElementById('hero-title').innerText = song.title;
-            document.getElementById('mini-title').innerText = song.title;
-            document.getElementById('hero-artist').innerText = song.artist;
-            document.getElementById('mini-artist').innerText = song.artist;
+            // Update Images
+            document.getElementById('hero-img').src = song.cover;
+            document.getElementById('desktop-mini-cover').src = song.cover;
+            document.getElementById('mobile-mini-cover').src = song.cover;
+
+            // Update Text
+            ['hero-title', 'desktop-mini-title', 'mobile-mini-title'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.innerText = song.title;
+            });
+            ['hero-artist', 'desktop-mini-artist', 'mobile-mini-artist'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.innerText = song.artist;
+            });
             
-            renderSongList();
+            // Highlight active in list
+            renderSongList(); 
         }
 
-        // SỬA: Không dùng async/await để gọi play(), gọi trực tiếp
-        function loadAndPlaySong(index) {
-            if (playlist.length === 0) return;
-            
-            currentIndex = index;
-            const song = playlist[index];
-            renderCurrentSongInfo(index);
+        function playSong(index) {
+            if(index !== undefined) currentIndex = index;
+            const song = playlist[currentIndex];
+            if(!song) return;
 
-            // Gán source
+            loadSongUI(currentIndex);
+            
+            // Show Mobile Player
+            document.getElementById('mobile-player').classList.remove('translate-y-24');
+
             audio.src = song.url;
-            audio.load(); // Reset buffer
-            
-            // Gọi play ngay lập tức (Synchronous call stack)
-            const playPromise = audio.play();
-
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    // Play thành công
-                    isPlaying = true;
-                    updatePlayIcons('pause');
-                    heroImg.classList.add('spinning');
-                })
-                .catch(error => {
-                    console.error("Lỗi Play:", error);
-                    isPlaying = false;
-                    updatePlayIcons('play');
-                    heroImg.classList.remove('spinning');
-                    
-                    // Nếu lỗi do iOS chặn, thử hiển thị thông báo nhỏ
-                    if(error.name === 'NotAllowedError') {
-                        // Thường sẽ không vào đây nếu đã click nút Unlock ở đầu
-                        // Nhưng nếu vào, nghĩa là mất quyền focus
-                        alert("Vui lòng chạm vào nút Play lần nữa để phát nhạc.");
-                    }
-                });
-            }
+            audio.load();
+            audio.play().then(() => {
+                isPlaying = true;
+                updatePlayIcons('pause');
+            }).catch(e => {
+                console.error(e);
+                isPlaying = false;
+                updatePlayIcons('play');
+            });
         }
 
         function togglePlay() {
             if(playlist.length === 0) return;
+            if(!audio.src) { playSong(currentIndex); return; }
 
-            // Nếu chưa có src, load bài hiện tại
-            if (!audio.src || audio.src === window.location.href) {
-                loadAndPlaySong(currentIndex);
-                return;
-            }
-
-            if (audio.paused) {
-                const p = audio.play();
-                if(p !== undefined) {
-                    p.then(() => {
-                        isPlaying = true;
-                        updatePlayIcons('pause');
-                        heroImg.classList.add('spinning');
-                    }).catch(e => {
-                        console.error("Resume failed:", e);
-                        // Nếu resume fail, thử load lại
-                        audio.load();
-                        audio.play().catch(e2 => console.error("Retry failed", e2));
-                    });
-                }
+            if(audio.paused) {
+                audio.play().then(() => {
+                    isPlaying = true;
+                    updatePlayIcons('pause');
+                });
             } else {
                 audio.pause();
                 isPlaying = false;
                 updatePlayIcons('play');
-                heroImg.classList.remove('spinning');
             }
         }
 
         function updatePlayIcons(state) {
-            const icon = state === 'pause' ? 'pause' : 'play';
-            playPauseBtn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 fill-black ml-${state==='play'?0.5:0}"></i>`;
-            heroPlayBtn.innerHTML = `<i data-lucide="${icon}" class="fill-black ml-${state==='play'?1:0}"></i>`;
+            const iconName = state === 'pause' ? 'pause' : 'play';
+            const html = `<i data-lucide="${iconName}" class="w-full h-full fill-current"></i>`;
+            
+            // Hero Button
+            const heroBtn = document.getElementById('hero-play-btn');
+            heroBtn.innerHTML = `<i data-lucide="${iconName}" class="fill-black ml-${state==='play'?1:0} w-6 h-6"></i>`;
+
+            // Desktop Button
+            const desktopBtn = document.getElementById('play-pause-desktop');
+            desktopBtn.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4 text-black fill-black ml-${state==='play'?0.5:0}"></i>`;
+
+            // Mobile Icon
+            const mobileIcon = document.getElementById('mobile-play-icon');
+            mobileIcon.setAttribute('data-lucide', iconName); // Simple attribute switch might not work with lucide reload
+            mobileIcon.parentElement.innerHTML = `<i data-lucide="${iconName}" class="fill-white w-6 h-6"></i>`;
+
             if(window.lucide) lucide.createIcons();
         }
 
-        // --- 4. EVENTS HANDLE ---
-
-        audio.addEventListener('loadedmetadata', () => {
-             const duration = audio.duration;
-             if(duration && !isNaN(duration) && duration !== Infinity) {
-                 totalDurationEl.innerText = formatTime(duration);
-             } else {
-                 totalDurationEl.innerText = "LIVE"; // Fallback nếu không lấy được duration
-             }
-        });
-
-        audio.addEventListener('timeupdate', () => {
-            if (isSeeking) return;
-            
-            if (audio.duration && audio.duration !== Infinity) {
-                const pct = (audio.currentTime / audio.duration) * 100;
-                progressBar.value = pct;
-                progressFill.style.width = pct + '%';
-                currentTimeEl.innerText = formatTime(audio.currentTime);
-            }
-        });
-
-        audio.addEventListener('ended', () => {
-            nextSong();
-        });
-
-        audio.addEventListener('error', (e) => {
-            console.log("Audio Error:", e);
-        });
-
-        // --- 5. ĐIỀU KHIỂN ---
-
         function nextSong() {
-            let nextIndex = currentIndex + 1;
-            if (nextIndex >= playlist.length) nextIndex = 0;
-            loadAndPlaySong(nextIndex);
+            currentIndex = (currentIndex + 1) % playlist.length;
+            playSong(currentIndex);
         }
 
         function prevSong() {
-            let prevIndex = currentIndex - 1;
-            if (prevIndex < 0) prevIndex = playlist.length - 1;
-            loadAndPlaySong(prevIndex);
+            currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+            playSong(currentIndex);
         }
 
-        // Hàm này được gọi từ onclick trong HTML -> được coi là User Interaction hợp lệ
-        window.playSongByIndex = function(index) {
-            loadAndPlaySong(index);
-        };
+        // --- EVENTS ---
+        function setupEventListeners() {
+            // Buttons
+            document.getElementById('hero-play-btn').onclick = togglePlay;
+            document.getElementById('play-pause-desktop').onclick = togglePlay;
+            document.getElementById('next-btn').onclick = nextSong;
+            document.getElementById('prev-btn').onclick = prevSong;
 
-        // --- 6. UI HELPERS ---
+            // Time Update
+            audio.addEventListener('timeupdate', () => {
+                if(isSeeking) return;
+                const pct = (audio.currentTime / audio.duration) * 100 || 0;
+                
+                // Desktop Bar
+                document.getElementById('progress-bar').value = pct;
+                document.getElementById('progress-fill').style.width = pct + '%';
+                document.getElementById('current-time').innerText = formatTime(audio.currentTime);
+                document.getElementById('total-duration').innerText = formatTime(audio.duration || 0);
 
-        function renderSongList() {
-            const container = document.getElementById('song-list');
-            if(!container) return;
-            container.innerHTML = '';
-            
-            if (playlist.length === 0) {
-                container.innerHTML = '<p class="text-zinc-500 p-4 col-span-3 text-center">Trống.</p>';
-                return;
-            }
+                // Mobile Bar
+                document.getElementById('mobile-progress-fill').style.width = pct + '%';
+            });
 
-            playlist.forEach((song, index) => {
-                const isActive = index === currentIndex;
-                const html = `
-                    <div onclick="playSongByIndex(${index})" class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition group ${isActive ? 'bg-white/10' : 'hover:bg-zinc-800/50'}">
-                        <div class="relative w-12 h-12 flex-shrink-0">
-                            <img src="${song.cover}" class="w-full h-full object-cover rounded shadow-sm">
-                            ${isActive ? `
-                                <div class="absolute inset-0 bg-black/50 flex items-center justify-center rounded">
-                                    <div class="w-2 h-2 bg-emerald-400 rounded-full animate-ping"></div>
-                                </div>
-                            ` : ''}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h4 class="font-semibold text-sm truncate ${isActive ? 'text-emerald-400' : 'text-white'}">${song.title}</h4>
-                            <p class="text-xs text-zinc-400 truncate">${song.artist}</p>
-                        </div>
-                    </div>
-                `;
-                container.insertAdjacentHTML('beforeend', html);
+            audio.addEventListener('ended', nextSong);
+
+            // Seeking
+            const pBar = document.getElementById('progress-bar');
+            pBar.addEventListener('input', (e) => {
+                isSeeking = true;
+                const pct = e.target.value;
+                document.getElementById('progress-fill').style.width = pct + '%';
+                document.getElementById('current-time').innerText = formatTime((pct/100) * audio.duration);
+            });
+            pBar.addEventListener('change', (e) => {
+                isSeeking = false;
+                audio.currentTime = (e.target.value / 100) * audio.duration;
+            });
+
+            // Volume
+            const vBar = document.getElementById('volume-bar');
+            vBar.addEventListener('input', (e) => {
+                audio.volume = e.target.value;
+                document.getElementById('volume-fill').style.width = (e.target.value * 100) + '%';
             });
         }
 
-        function showEmptyState() {
-            document.getElementById('hero-title').innerText = "Chưa có nhạc";
-            document.getElementById('hero-artist').innerText = "Thêm nhạc trong Admin";
-        }
-
-        function formatTime(seconds) {
-            if (isNaN(seconds) || seconds === Infinity) return "0:00";
-            const min = Math.floor(seconds / 60);
-            const sec = Math.floor(seconds % 60);
-            return `${min}:${sec < 10 ? '0' + sec : sec}`;
-        }
-
-        // --- 7. INPUT EVENTS (SEEKING & VOLUME) ---
-
-        progressBar.addEventListener('input', (e) => {
-            isSeeking = true;
-            const pct = e.target.value;
-            progressFill.style.width = pct + '%';
-            if(audio.duration && audio.duration !== Infinity) {
-                const time = (pct / 100) * audio.duration;
-                currentTimeEl.innerText = formatTime(time);
-            }
-        });
-
-        progressBar.addEventListener('change', (e) => {
-            isSeeking = false;
-            if (audio.duration && audio.duration !== Infinity) {
-                audio.currentTime = (e.target.value / 100) * audio.duration;
-            }
-        });
-
-        volumeBar.addEventListener('input', (e) => {
-            audio.volume = e.target.value;
-            volumeFill.style.width = (e.target.value * 100) + '%';
-        });
-
-        // --- 8. ADMIN LOGIC ---
-        
-        window.openAdminModal = function() {
-            document.getElementById('admin-modal').classList.remove('hidden');
-            renderAdminSongList();
-        }
-        window.closeAdminModal = function() {
-            document.getElementById('admin-modal').classList.add('hidden');
-        }
-
-        window.renderAdminSongList = function() {
-            const list = document.getElementById('admin-song-list');
+        // --- RENDERING ---
+        function renderSongList() {
+            const list = document.getElementById('song-list');
             list.innerHTML = '';
             
-            allSongs.forEach((song, index) => {
+            playlist.forEach((song, i) => {
+                const isActive = i === currentIndex;
+                const activeClass = isActive ? 'text-[#1ed760]' : 'text-white';
+                
                 const html = `
-                    <tr class="hover:bg-zinc-800/30">
-                        <td class="px-4 py-3">
-                            <div class="font-medium text-white truncate max-w-[180px]">${song.title}</div>
-                        </td>
-                        <td class="px-2 py-3 text-center">
-                            <input type="checkbox" 
-                                class="w-4 h-4 accent-emerald-500 rounded" 
-                                ${!song.isHidden ? 'checked' : ''} 
-                                onchange="toggleSongVisibility(${index})"
-                            >
-                        </td>
-                        <td class="px-2 py-3 text-center">
-                            <button onclick="deleteSong(${index})" class="text-zinc-500 hover:text-red-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </td>
-                    </tr>
+                    <div onclick="playSong(${i})" class="group flex items-center gap-3 p-2 rounded-md hover:bg-[#2a2a2a] cursor-pointer transition ${isActive ? 'bg-[#ffffff10]' : ''}">
+                        <span class="w-4 text-center text-sm text-[#b3b3b3] group-hover:hidden ${isActive ? 'hidden' : 'block'}">${i+1}</span>
+                        <i data-lucide="play" class="w-4 h-4 text-white fill-white hidden group-hover:block ${isActive ? '!hidden' : ''}"></i>
+                        
+                        ${isActive ? `<img src="https://open.spotifycdn.com/cdn/images/equaliser-animated-green.f93a2ef4.gif" class="w-3.5 h-3.5">` : ''}
+
+                        <img src="${song.cover}" class="w-10 h-10 rounded object-cover">
+                        
+                        <div class="flex-1 min-w-0">
+                            <div class="font-medium text-base truncate ${activeClass}">${song.title}</div>
+                            <div class="text-sm text-[#b3b3b3] truncate">${song.artist}</div>
+                        </div>
+                        <button class="text-[#b3b3b3] hover:text-white mr-2"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>
+                    </div>
                 `;
                 list.insertAdjacentHTML('beforeend', html);
             });
             if(window.lucide) lucide.createIcons();
         }
 
-        window.addNewSong = function() {
+        function renderAdminList() {
+            const list = document.getElementById('admin-song-list');
+            list.innerHTML = '';
+            allSongs.forEach((song, i) => {
+                const html = `
+                    <div class="flex items-center justify-between bg-[#3e3e3e] p-2 rounded">
+                        <div class="truncate text-white text-sm flex-1 pr-2">${song.title}</div>
+                        <div class="flex gap-2">
+                            <button onclick="toggleVisibility(${i})" class="${song.isHidden ? 'text-gray-500' : 'text-emerald-500'}"><i data-lucide="${song.isHidden ? 'eye-off' : 'eye'}" class="w-4 h-4"></i></button>
+                            <button onclick="deleteSong(${i})" class="text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                `;
+                list.insertAdjacentHTML('beforeend', html);
+            });
+            if(window.lucide) lucide.createIcons();
+        }
+
+        // --- HELPERS & ADMIN ---
+        function formatTime(s) {
+            if(isNaN(s)) return "0:00";
+            const m = Math.floor(s/60);
+            const sec = Math.floor(s%60);
+            return `${m}:${sec<10?'0'+sec:sec}`;
+        }
+        
+        function openAdminModal() { document.getElementById('admin-modal').classList.remove('hidden'); renderAdminList(); }
+        function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); }
+        
+        function addNewSong() {
             const title = document.getElementById('input-title').value;
             const url = document.getElementById('input-url').value;
-            if(!title || !url) return alert("Thiếu Tên hoặc Link!");
-
+            if(!title || !url) return alert("Thiếu tên hoặc link!");
+            
             allSongs.push({
                 id: Date.now(),
-                title,
+                title, 
                 artist: document.getElementById('input-artist').value || "Unknown",
                 cover: document.getElementById('input-cover').value || "https://via.placeholder.com/300",
                 url,
                 isHidden: false
             });
-            saveData();
+            saveAndReload();
+            closeAdminModal();
+            // Clear inputs
+            document.getElementById('input-title').value = '';
+            document.getElementById('input-url').value = '';
+        }
+
+        function toggleVisibility(i) { allSongs[i].isHidden = !allSongs[i].isHidden; saveAndReload(); }
+        function deleteSong(i) { if(confirm("Xóa?")) { allSongs.splice(i,1); saveAndReload(); } }
+        function resetDefaultSongs() { if(confirm("Reset?")) { allSongs = [...defaultSongs]; saveAndReload(); } }
+
+        function saveAndReload() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(allSongs));
             updatePlaylist();
-            renderAdminSongList();
-            alert("Đã thêm!");
-            
-            document.getElementById('input-title').value = "";
-            document.getElementById('input-url').value = "";
-        };
-
-        window.toggleSongVisibility = function(i) {
-            allSongs[i].isHidden = !allSongs[i].isHidden;
-            saveData();
-            updatePlaylist();
-        };
-
-        window.deleteSong = function(i) {
-            if(confirm("Xóa?")) {
-                allSongs.splice(i, 1);
-                saveData();
-                updatePlaylist();
-                renderAdminSongList();
-            }
-        };
-
-        window.resetDefaultSongs = function() {
-            if(confirm("Khôi phục danh sách gốc?")) {
-                allSongs = [...defaultSongs];
-                saveData();
-                updatePlaylist();
-                renderAdminSongList();
-            }
-        };
-
-        const sidebar = document.getElementById('sidebar');
-        document.getElementById('open-sidebar').onclick = () => sidebar.classList.remove('-translate-x-full');
-        document.getElementById('close-sidebar').onclick = () => sidebar.classList.add('-translate-x-full');
-
-        playPauseBtn.onclick = togglePlay;
-        heroPlayBtn.onclick = togglePlay;
-        document.getElementById('next-btn').onclick = nextSong;
-        document.getElementById('prev-btn').onclick = prevSong;
+        }
 
         window.onload = init;
-
     </script>
 </body>
 </html>
